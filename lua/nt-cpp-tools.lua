@@ -1,4 +1,5 @@
 local queries = require "nvim-treesitter.query"
+local utils = require "nvim-treesitter.utils"
 
 local M = {}
 
@@ -6,7 +7,7 @@ local M = {}
 function M.init()
   require "nvim-treesitter".define_modules {
     nt_cpp_tools = {
-      module_path = "nt-cpp-tools.internal",
+      module_path = "nvim-treesitter.nt-cpp-tools.internal",
       enable = false,
       is_supported = function(lang)
         -- TODO: you don't want your queries to be named `awesome-query`, do you ?
@@ -15,5 +16,7 @@ function M.init()
     }
   }
 end
+
+utils.setup_commands("nt-cpp-tools.internal", require"nvim-treesitter.nt-cpp-tools.internal".commands)
 
 return M

@@ -99,4 +99,13 @@ function M.detach(bufnr)
     print("dattach")
 end
 
+M.commands = {
+    TSCppDefineClassFunc = {
+        run = M.impFunc,
+        args = {
+            "-range"
+        }
+    }
+}
+
 return M
