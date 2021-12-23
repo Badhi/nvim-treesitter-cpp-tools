@@ -42,19 +42,31 @@ local function run_on_nodes(query, runner)
     return true
 end
 
-function M.impFunc()
+local function add_text_edit(text, start_row, start_col, end_row, end_col)
+    local edit = {}
+    table.insert(edit, {
+        range = {
+            start = { line = start_row, character = start_col},
+            ["end"] = { line = end_row, character = end_col}
+        },
+        newText = text
+    })
+    vim.lsp.util.apply_text_edits(edit, 0)
+end
+
+function M.imp_func()
     local query = ts_query.get_query('cpp', 'outside_class_def')
 
     local class = ''
     local results = {}
-    local eRow = 0;
+    local e_row = 0;
     local runner =  function(captures, match)
         for cid, node in pairs(match) do
             local cap_str = captures[cid]
             local value = ts_utils.get_node_text(node)[1]
 
             if  cap_str == 'class' then
-                _, _, eRow, _ = node:range()
+                _, _, e_row, _ = node:range()
             elseif cap_str == 'class_name' then
                 class = value
                 results[#results + 1] = { ret_type = '', fun_dec = '' }
@@ -80,22 +92,15 @@ function M.impFunc()
         output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
     end
 
-    local edit = {}
-    table.insert(edit, {
-        range = {
-            start = { line = eRow + 1, character = 0},
-            ["end"] = { line = eRow + 1, character = 0}
-        },
-        newText = output
-    })
-    vim.lsp.util.apply_text_edits(edit, 0)
+    add_text_edit(output, e_row + 1, 0, e_row + 1, 0)
+
 end
 
-function M.concreteClassImp()
+function M.concrete_class_imp()
     local query = ts_query.get_query('cpp', 'concrete_implement')
     local base_class = ''
     local results = {}
-    local eRow;
+    local e_row;
     local runner =  function(captures, matches)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
@@ -104,7 +109,7 @@ function M.concreteClassImp()
                 base_class = value
                 results[#results + 1] = ''
             elseif cap_str == 'class' then
-                _, _, eRow, _ = node:range()
+                _, _, e_row, _ = node:range()
             elseif cap_str == 'virtual' then
                 results[#results] = value:gsub('^virtual', ''):gsub([[= *0]], 'override')
             end
@@ -122,15 +127,72 @@ function M.concreteClassImp()
     end
     class = class .. '};'
 
-    local edit = {}
-    table.insert(edit, {
-        range = {
-            start = { line = eRow + 1, character = 0},
-            ["end"] = { line = eRow + 1, character = 0}
-        },
-        newText = class
-    })
-    vim.lsp.util.apply_text_edits(edit, 0)
+    add_text_edit(class, e_row + 1, 0, e_row + 1, 0)
+end
+
+function M.rule_of_3()
+    local query = ts_query.get_query('cpp', 'special_function_detectors')
+
+    local checkers = { destructor = false, copy_constructor = false, copy_assignment = false }
+    local entry_location
+    local class_name
+
+    local entry_location_update = function (start_row, start_col)
+        if entry_location == nil or entry_location.start_row < start_row then
+            entry_location = { start_row = start_row + 1 , start_col = start_col }
+        end
+    end
+
+    local runner = function(captures, matches)
+        for p, node in pairs(matches) do
+            local cap_str = captures[p]
+            local value = ts_utils.get_node_text(node)[1]
+            local start_row, start_col, _, _ = node:range()
+
+            if cap_str == "class_name" then
+                class_name = value
+            elseif cap_str ==  "destructor" then
+                checkers.destructor = true
+                entry_location_update(start_row, start_col)
+            elseif cap_str ==  "assignment_operator_reference_declarator" then
+                checkers.copy_assignment = true
+                entry_location_update(start_row, start_col)
+            elseif cap_str ==  "copy_construct_function_declarator" then
+                checkers.copy_constructor = true
+                entry_location_update(start_row, start_col)
+            end
+        end
+    end
+
+    if not run_on_nodes(query, runner) then
+        return
+    end
+
+    if (checkers.copy_assignment and checkers.copy_constructor and checkers.destructor) or
+        (not checkers.copy_assignment and not checkers.copy_constructor and not checkers.destructor) then
+        return
+    end
+
+    local add_txt_below_existing_def = function (txt)
+        add_text_edit(txt, entry_location.start_row, entry_location.start_col,
+                        entry_location.start_row, 0)
+        --entry_location.start_row = entry_location.start_row + 1
+    end
+
+    if not checkers.copy_assignment then
+        local txt = class_name .. '& operator=(const ' .. class_name .. '&);\n'
+        add_txt_below_existing_def(txt)
+    end
+
+    if not checkers.copy_constructor then
+        local txt = class_name .. '(const ' .. class_name .. '&);\n'
+        add_txt_below_existing_def(txt)
+    end
+
+    if not checkers.destructor then
+        local txt = '~' .. class_name .. '();\n'
+        add_txt_below_existing_def(txt)
+    end
 end
 
 function M.attach(bufnr, lang)
@@ -143,17 +205,23 @@ end
 
 M.commands = {
     TSCppDefineClassFunc = {
-        run = M.impFunc,
+        run = M.imp_func,
         args = {
             "-range"
         }
     },
     TSCppMakeConcreteClass = {
-        run = M.concreteClassImp,
+        run = M.concrete_class_imp,
         args = {
             "-range"
         }
-    }
+    },
+    TSCppRuleOf3 = {
+        run = M.rule_of_3,
+        args = {
+            "-range"
+        }
+    },
 }
 
 return M
