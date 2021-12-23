@@ -77,7 +77,7 @@ function M.impFunc()
 
     local output = ''
     for _, fun in ipairs(results) do
-        output = output .. fun.ret_type .. ' ' .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
+        output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
     end
 
     local edit = {}
