@@ -63,10 +63,10 @@ function M.impFunc()
             elseif cap_str == 'return_type' then
                 results[#results].ret_type = results[#results].ret_type .. value
             elseif cap_str == 'fun_dec' then
-                results[#results].fun_dec = value
+                results[#results].fun_dec = value:gsub('override$', '')
             elseif cap_str == 'ref_fun_dec' then
                 results[#results].ret_type = results[#results].ret_type .. '&'
-                results[#results].fun_dec = value:gsub('^& *', '')
+                results[#results].fun_dec = value:gsub('^& *', ''):gsub('override$', '')
             end
         end
     end
@@ -91,6 +91,48 @@ function M.impFunc()
     vim.lsp.util.apply_text_edits(edit, 0)
 end
 
+function M.concreteClassImp()
+    local query = ts_query.get_query('cpp', 'concrete_implement')
+    local base_class = ''
+    local results = {}
+    local eRow;
+    local runner =  function(captures, matches)
+        for p, node in pairs(matches) do
+            local cap_str = captures[p]
+            local value = ts_utils.get_node_text(node)[1]
+            if cap_str == 'base_class_name' then
+                base_class = value
+                results[#results + 1] = ''
+            elseif cap_str == 'class' then
+                _, _, eRow, _ = node:range()
+            elseif cap_str == 'virtual' then
+                results[#results] = value:gsub('^virtual', ''):gsub([[= *0]], 'override')
+            end
+        end
+    end
+
+    if not run_on_nodes(query, runner) then
+        return
+    end
+
+    local class_name = vim.fn.input("New Name: ", base_class .. "Impl")
+    local class = string.format('class %s : public %s\n{\npublic:\n', class_name, base_class)
+    for _, imp in ipairs(results) do
+        class = class .. imp .. '\n'
+    end
+    class = class .. '};'
+
+    local edit = {}
+    table.insert(edit, {
+        range = {
+            start = { line = eRow + 1, character = 0},
+            ["end"] = { line = eRow + 1, character = 0}
+        },
+        newText = class
+    })
+    vim.lsp.util.apply_text_edits(edit, 0)
+end
+
 function M.attach(bufnr, lang)
     print("attach")
 end
@@ -102,6 +144,12 @@ end
 M.commands = {
     TSCppDefineClassFunc = {
         run = M.impFunc,
+        args = {
+            "-range"
+        }
+    },
+    TSCppMakeConcreteClass = {
+        run = M.concreteClassImp,
         args = {
             "-range"
         }
