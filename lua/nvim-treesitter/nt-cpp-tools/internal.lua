@@ -170,6 +170,12 @@ function M.rule_of_3()
 
     if (checkers.copy_assignment and checkers.copy_constructor and checkers.destructor) or
         (not checkers.copy_assignment and not checkers.copy_constructor and not checkers.destructor) then
+        local notifyMsg = [[ No change needed since non of the following is implemented
+        - destructor
+        - copy constructor
+        - assignment constructor
+        ]]
+        vim.notify(notifyMsg)
         return
     end
 
