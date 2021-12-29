@@ -130,10 +130,17 @@ function M.concrete_class_imp()
     add_text_edit(class, e_row + 1, 0)
 end
 
-function M.rule_of_3()
+function M.rule_of_5(limit_at_3)
     local query = ts_query.get_query('cpp', 'special_function_detectors')
 
-    local checkers = { destructor = false, copy_constructor = false, copy_assignment = false }
+    local checkers = {
+        destructor = false,
+        copy_constructor = false,
+        copy_assignment = false,
+        move_constructor = false,
+        move_assignment = false
+    }
+
     local entry_location
     local class_name
 
@@ -160,6 +167,14 @@ function M.rule_of_3()
             elseif cap_str ==  "copy_construct_function_declarator" then
                 checkers.copy_constructor = true
                 entry_location_update(start_row, start_col)
+            elseif not limit_at_3 then
+                if cap_str == "move_assignment_operator_reference_declarator" then
+                    checkers.move_assignment = true
+                    entry_location_update(start_row, start_col)
+                elseif cap_str == "move_construct_function_declarator" then
+                    checkers.move_constructor = true
+                    entry_location_update(start_row, start_col)
+                end
             end
         end
     end
@@ -168,13 +183,32 @@ function M.rule_of_3()
         return
     end
 
-    if (checkers.copy_assignment and checkers.copy_constructor and checkers.destructor) or
-        (not checkers.copy_assignment and not checkers.copy_constructor and not checkers.destructor) then
-        local notifyMsg = [[ No change needed since non of the following is implemented
-        - destructor
-        - copy constructor
-        - assignment constructor
-        ]]
+    local skip_rule_of_3 = (checkers.copy_assignment and checkers.copy_constructor and checkers.destructor) or
+                            (not checkers.copy_assignment and not checkers.copy_constructor and not checkers.destructor)
+
+    local skip_rule_of_5 =  ( ( checkers.copy_assignment and checkers.copy_constructor and checkers.destructor and
+                                    checkers.move_assignment and checkers.move_constructor ) or
+                                (not checkers.copy_assignment and not checkers.copy_constructor and not checkers.destructor and
+                                    not checkers.move_assignment and not checkers.move_constructor) )
+
+    if limit_at_3 and skip_rule_of_3 then
+        local notifyMsg = [[ No change needed since either non or all of the following is implemented
+            - destructor
+            - copy constructor
+            - assignment constructor
+            ]]
+        vim.notify(notifyMsg)
+        return
+    end
+
+    if not limit_at_3 and skip_rule_of_5 then
+        local notifyMsg = [[ No change needed since either non or all of the following is implemented
+            - destructor
+            - copy constructor
+            - assignment constructor
+            - move costructor
+            - move assignment
+            ]]
         vim.notify(notifyMsg)
         return
     end
@@ -207,6 +241,20 @@ function M.rule_of_3()
         local txt = '~' .. class_name .. '();'
         add_txt_below_existing_def(txt)
     end
+
+    if not limit_at_3 then
+        if not checkers.move_assignment then
+            add_text_edit(newLine, entry_location.start_row, 0)
+        local txt = class_name .. '& operator=(const ' .. class_name .. '&&);'
+            add_txt_below_existing_def(txt)
+        end
+
+        if not checkers.move_constructor then
+            add_text_edit(newLine, entry_location.start_row, 0)
+            local txt = class_name .. '(const ' .. class_name .. '&&);'
+            add_txt_below_existing_def(txt)
+        end
+    end
 end
 
 function M.attach(bufnr, lang)
@@ -231,7 +279,13 @@ M.commands = {
         }
     },
     TSCppRuleOf3 = {
-        run = M.rule_of_3,
+        run = function () M.rule_of_5(true) end,
+        args = {
+            "-range"
+        }
+    },
+    TSCppRuleOf5 = {
+        run = function () M.rule_of_5(false) end,
         args = {
             "-range"
         }
