@@ -42,12 +42,12 @@ local function run_on_nodes(query, runner)
     return true
 end
 
-local function add_text_edit(text, start_row, start_col, end_row, end_col)
+local function add_text_edit(text, start_row, start_col)
     local edit = {}
     table.insert(edit, {
         range = {
             start = { line = start_row, character = start_col},
-            ["end"] = { line = end_row, character = end_col}
+            ["end"] = { line = start_row, character = start_col}
         },
         newText = text
     })
@@ -92,7 +92,7 @@ function M.imp_func()
         output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
     end
 
-    add_text_edit(output, e_row + 1, 0, e_row + 1, 0)
+    add_text_edit(output, e_row + 1, 0)
 
 end
 
@@ -127,7 +127,7 @@ function M.concrete_class_imp()
     end
     class = class .. '};'
 
-    add_text_edit(class, e_row + 1, 0, e_row + 1, 0)
+    add_text_edit(class, e_row + 1, 0)
 end
 
 function M.rule_of_3()
@@ -174,23 +174,31 @@ function M.rule_of_3()
     end
 
     local add_txt_below_existing_def = function (txt)
-        add_text_edit(txt, entry_location.start_row, entry_location.start_col,
-                        entry_location.start_row, 0)
-        --entry_location.start_row = entry_location.start_row + 1
+        add_text_edit(txt, entry_location.start_row, entry_location.start_col)
+        entry_location.start_row = entry_location.start_row + 1
     end
 
+    -- We are first adding a empty string on the required line which is of length start_col since
+    -- lsp text edit cannot add strings beyond already edited region
+    -- TODO need a stable method of handling this entry
+
+    local newLine = string.format('%' .. (entry_location.start_col + 1) .. 's', '\n')
+
     if not checkers.copy_assignment then
-        local txt = class_name .. '& operator=(const ' .. class_name .. '&);\n'
+        add_text_edit(newLine, entry_location.start_row, 0)
+        local txt = class_name .. '& operator=(const ' .. class_name .. '&);'
         add_txt_below_existing_def(txt)
     end
 
     if not checkers.copy_constructor then
-        local txt = class_name .. '(const ' .. class_name .. '&);\n'
+        add_text_edit(newLine, entry_location.start_row, 0)
+        local txt = class_name .. '(const ' .. class_name .. '&);'
         add_txt_below_existing_def(txt)
     end
 
     if not checkers.destructor then
-        local txt = '~' .. class_name .. '();\n'
+        add_text_edit(newLine, entry_location.start_row, 0)
+        local txt = '~' .. class_name .. '();'
         add_txt_below_existing_def(txt)
     end
 end
