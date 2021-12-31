@@ -1,8 +1,13 @@
 local ts_utils = require("nvim-treesitter.ts_utils")
 local ts_query = require("nvim-treesitter.query")
 local parsers = require("nvim-treesitter.parsers")
+local previewer = require("nvim-treesitter.nt-cpp-tools.preview_printer")
 
 local M = {}
+
+local function show_preview(txt)
+
+end
 
 local function  get_visual_range()
   local _, csrow, cscol, _ = unpack(vim.fn.getpos("'<"))
@@ -92,7 +97,11 @@ function M.imp_func()
         output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
     end
 
-    add_text_edit(output, e_row + 1, 0)
+    local on_preview_succces = function (position)
+        add_text_edit(output, position + 1, 0)
+    end
+
+    previewer.start_preview(output, e_row + 1, on_preview_succces)
 
 end
 
