@@ -4,7 +4,7 @@ local mark_id
 local last_buffer
 local ns_id
 local last_txt
-local on_accept
+local on_accept_callbck
 
 local function remove_virt_text()
     if mark_id then
@@ -51,17 +51,17 @@ end
 
 function M.flush_and_end_preview()
     end_preview()
-    on_accept = nil
+    on_accept_callbck = nil
 end
 
 function M.accept_and_end_preview()
     end_preview()
-    on_accept(vim.api.nvim_win_get_cursor(0)[1])
-    on_accept = nil
+    on_accept_callbck(vim.api.nvim_win_get_cursor(0)[1])
+    on_accept_callbck = nil
 end
 
 function M.start_preview(result, insert_row, on_accept_cb)
-    on_accept = on_accept_cb
+    on_accept_callbck = on_accept_cb or on_accept_callbck
     insert_row = insert_row or vim.api.nvim_win_get_cursor(0)[1]
 
     local config = { silent = true, noremap = true }
