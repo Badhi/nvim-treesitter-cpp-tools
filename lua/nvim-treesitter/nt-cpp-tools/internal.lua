@@ -5,10 +5,6 @@ local previewer = require("nvim-treesitter.nt-cpp-tools.preview_printer")
 
 local M = {}
 
-local function show_preview(txt)
-
-end
-
 local function  get_visual_range()
   local _, csrow, cscol, _ = unpack(vim.fn.getpos("'<"))
   local _, cerow, cecol, _ = unpack(vim.fn.getpos("'>"))
@@ -97,8 +93,8 @@ function M.imp_func()
         output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
     end
 
-    local on_preview_succces = function (position)
-        add_text_edit(output, position + 1, 0)
+    local on_preview_succces = function (row)
+        add_text_edit(output, row, 0)
     end
 
     previewer.start_preview(output, e_row + 1, on_preview_succces)
@@ -136,7 +132,11 @@ function M.concrete_class_imp()
     end
     class = class .. '};'
 
-    add_text_edit(class, e_row + 1, 0)
+    local on_preview_succces = function (row)
+        add_text_edit(class, row, 0)
+    end
+
+    previewer.start_preview(class, e_row + 1, on_preview_succces)
 end
 
 function M.rule_of_5(limit_at_3)

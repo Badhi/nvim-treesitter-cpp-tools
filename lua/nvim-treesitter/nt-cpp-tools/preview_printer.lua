@@ -3,7 +3,7 @@ M = {}
 local mark_id
 local last_buffer
 local ns_id
-local last_txt
+local result
 local on_accept_callbck
 
 local function remove_virt_text()
@@ -16,14 +16,10 @@ local function draw_virtual_text(txt, row)
     remove_virt_text()
 
     if txt then
-        last_txt = txt
-    else
-        txt = last_txt
-    end
-
-    local result = {}
-    for line in txt:gmatch('[^\n]+') do
-        result[#result+1] = {{line, ''}}
+        result = {}
+        for line in txt:gmatch('[^\n]+') do
+            result[#result+1] = {{line, ''}}
+        end
     end
 
     last_buffer = vim.fn.bufnr('%')
@@ -60,25 +56,30 @@ function M.accept_and_end_preview()
     on_accept_callbck = nil
 end
 
-function M.start_preview(result, insert_row, on_accept_cb)
-    on_accept_callbck = on_accept_cb or on_accept_callbck
-    insert_row = insert_row or vim.api.nvim_win_get_cursor(0)[1]
+function M.on_cursor_moved()
+    draw_virtual_text(nil, vim.api.nvim_win_get_cursor(0)[1])
+end
 
+function M.start_preview(txt, insert_row, on_accept_cb)
+    on_accept_callbck = on_accept_cb
     local config = { silent = true, noremap = true }
 
     local scope = "require'nvim-treesitter.nt-cpp-tools.preview_printer'."
-    vim.api.nvim_buf_set_keymap(0, 'n', 'q', ":lua " .. scope .. "end_preview()<CR>", config)
+    vim.api.nvim_buf_set_keymap(0, 'n', 'q', ":lua " .. scope .. "flush_and_end_preview()<CR>", config)
     vim.api.nvim_buf_set_keymap(0, 'n', '<tab>', ":lua " .. scope .. "accept_and_end_preview()<CR>", config)
 
-    draw_virtual_text(result, insert_row)
+    draw_virtual_text(txt, vim.api.nvim_win_get_cursor(0)[1])
 
     vim.cmd(
     [[
     augroup TSCppTools
-    autocmd! CursorMoved * lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.start_preview()
+    autocmd! CursorMoved * lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.on_cursor_moved()
     augroup END
     ]]
     )
+
+    vim.api.nvim_win_set_cursor(0, {insert_row, 0})
+    M.on_cursor_moved()
 end
 
 return M
