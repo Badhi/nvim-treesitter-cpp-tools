@@ -1,3 +1,5 @@
+local configs = require "nvim-treesitter.configs"
+
 M = {}
 
 local mark_id
@@ -39,8 +41,9 @@ end
 
 
 local function end_preview()
-    vim.api.nvim_buf_del_keymap(0, 'n', 'q')
-    vim.api.nvim_buf_del_keymap(0, 'n', '<tab>')
+    local config = configs.get_module "nt_cpp_tools"
+    vim.api.nvim_buf_del_keymap(0, 'n', config.preview.quit)
+    vim.api.nvim_buf_del_keymap(0, 'n', config.preview.accept)
     remove_virt_text()
     vim.cmd( [[autocmd! TSCppTools *]])
 end
@@ -62,11 +65,16 @@ end
 
 function M.start_preview(txt, insert_row, on_accept_cb)
     on_accept_callbck = on_accept_cb
-    local config = { silent = true, noremap = true }
+    local keymap_config = { silent = true, noremap = true }
 
-    local scope = "require'nvim-treesitter.nt-cpp-tools.preview_printer'."
-    vim.api.nvim_buf_set_keymap(0, 'n', 'q', ":lua " .. scope .. "flush_and_end_preview()<CR>", config)
-    vim.api.nvim_buf_set_keymap(0, 'n', '<tab>', ":lua " .. scope .. "accept_and_end_preview()<CR>", config)
+    local config = configs.get_module "nt_cpp_tools"
+
+    vim.api.nvim_buf_set_keymap(0, 'n', config.preview.quit,
+        ":lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.flush_and_end_preview()<CR>",
+        keymap_config)
+    vim.api.nvim_buf_set_keymap(0, 'n', config.preview.accept,
+        ":lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.accept_and_end_preview()<CR>",
+        keymap_config)
 
     draw_virtual_text(txt, vim.api.nvim_win_get_cursor(0)[1])
 

@@ -9,6 +9,10 @@ function M.init()
     nt_cpp_tools = {
       module_path = "nvim-treesitter.nt-cpp-tools.internal",
       enable = false,
+      preview = {
+          quit = 'q',
+          accept = '<tab>'
+      },
       is_supported = function(lang)
         -- TODO: you don't want your queries to be named `awesome-query`, do you ?
         return queries.get_query(lang, 'query') ~= nil
