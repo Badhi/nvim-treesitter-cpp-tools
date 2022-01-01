@@ -8,6 +8,30 @@ Experimental treesitter based neovim plugin to create intelligent implementation
 3. Add missing functions to obey Rule of 3
 4. Add missing functions to obey Rule of 5
 
+## Install
+
+Using [paq](https://github.com/savq/paq-nvim)
+
+```
+require "paq" {
+    "nvim-treesitter/nvim-treesitter",
+    "Badhi/nvim-treesitter-cpp-tools",
+}
+```
+## Setup
+
+Append the following config to the nvim-treesitter config
+
+```
+nt_cpp_tools = {
+      enable = true,
+      preview = {
+          quit = 'q', -- optional keymapping for quit preview
+          accept = '<tab>' -- optional keymapping for accept preview
+      },
+}
+```
+
 ## Usage
 
 * Select the range of the class using visual mode
