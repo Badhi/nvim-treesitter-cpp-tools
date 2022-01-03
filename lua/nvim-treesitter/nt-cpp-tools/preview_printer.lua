@@ -31,7 +31,6 @@ local function draw_virtual_text(txt, row)
     local col_num = 0
 
     local opts = {
-      end_line = 10,
       id = 1,
       virt_lines = result
     }
