@@ -7,6 +7,7 @@ local last_buffer
 local ns_id
 local result
 local on_accept_callbck
+local entered_buffers = {}
 
 local function remove_virt_text()
     if mark_id then
@@ -41,8 +42,10 @@ end
 
 local function end_preview()
     local config = configs.get_module "nt_cpp_tools"
-    vim.api.nvim_buf_del_keymap(0, 'n', config.preview.quit)
-    vim.api.nvim_buf_del_keymap(0, 'n', config.preview.accept)
+    for _, buf in pairs(entered_buffers) do
+        vim.api.nvim_buf_del_keymap(buf, 'n', config.preview.quit)
+        vim.api.nvim_buf_del_keymap(buf, 'n', config.preview.accept)
+    end
     remove_virt_text()
     vim.cmd( [[autocmd! TSCppTools *]])
 end
@@ -62,25 +65,35 @@ function M.on_cursor_moved()
     draw_virtual_text(nil, vim.api.nvim_win_get_cursor(0)[1])
 end
 
-function M.start_preview(txt, insert_row, on_accept_cb)
-    on_accept_callbck = on_accept_cb
+local function add_buf_keymaps(buf_id)
     local keymap_config = { silent = true, noremap = true }
-
     local config = configs.get_module "nt_cpp_tools"
-
-    vim.api.nvim_buf_set_keymap(0, 'n', config.preview.quit,
+    vim.api.nvim_buf_set_keymap(buf_id, 'n', config.preview.quit,
         ":lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.flush_and_end_preview()<CR>",
         keymap_config)
-    vim.api.nvim_buf_set_keymap(0, 'n', config.preview.accept,
+    vim.api.nvim_buf_set_keymap(buf_id, 'n', config.preview.accept,
         ":lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.accept_and_end_preview()<CR>",
         keymap_config)
+end
 
+function M.on_buffer_add()
+    local buf_id = vim.fn.bufnr('%')
+    print('buff added ' .. buf_id)
+    table.insert(entered_buffers, buf_id)
+    add_buf_keymaps(buf_id)
+end
+
+function M.start_preview(txt, insert_row, on_accept_cb)
+    on_accept_callbck = on_accept_cb
+
+    add_buf_keymaps(vim.fn.bufnr('%'))
     draw_virtual_text(txt, vim.api.nvim_win_get_cursor(0)[1])
 
     vim.cmd(
     [[
     augroup TSCppTools
     autocmd! CursorMoved * lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.on_cursor_moved()
+    autocmd! BufAdd * lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.on_buffer_add()
     augroup END
     ]]
     )
