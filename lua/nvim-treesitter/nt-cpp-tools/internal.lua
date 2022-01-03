@@ -90,7 +90,9 @@ function M.imp_func()
 
     local output = ''
     for _, fun in ipairs(results) do
-        output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
+        if fun.fun_dec ~= '' then
+            output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
+        end
     end
 
     local on_preview_succces = function (row)
