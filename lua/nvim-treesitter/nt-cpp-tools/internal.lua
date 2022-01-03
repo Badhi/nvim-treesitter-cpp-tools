@@ -64,7 +64,10 @@ function M.imp_func()
     local runner =  function(captures, match)
         for cid, node in pairs(match) do
             local cap_str = captures[cid]
-            local value = ts_utils.get_node_text(node)[1]
+            local value = ''
+            for id, line in pairs(ts_utils.get_node_text(node)) do
+                value = (id == 1 and line or value .. '\n' .. line)
+            end
 
             if  cap_str == 'class' then
                 _, _, e_row, _ = node:range()
@@ -111,7 +114,11 @@ function M.concrete_class_imp()
     local runner =  function(captures, matches)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
-            local value = ts_utils.get_node_text(node)[1]
+            local value = ''
+            for id, line in pairs(ts_utils.get_node_text(node)) do
+                value = (id == 1 and line or value .. '\n' .. line)
+            end
+
             if cap_str == 'base_class_name' then
                 base_class = value
                 results[#results + 1] = ''
@@ -164,7 +171,10 @@ function M.rule_of_5(limit_at_3)
     local runner = function(captures, matches)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
-            local value = ts_utils.get_node_text(node)[1]
+            local value = ''
+            for id, line in pairs(ts_utils.get_node_text(node)) do
+                value = (id == 1 and line or value .. '\n' .. line)
+            end
             local start_row, start_col, _, _ = node:range()
 
             if cap_str == "class_name" then
