@@ -266,7 +266,7 @@ function M.rule_of_5(limit_at_3)
     if not limit_at_3 then
         if not checkers.move_assignment then
             add_text_edit(newLine, entry_location.start_row, 0)
-        local txt = class_name .. '& operator=(const ' .. class_name .. '&&);'
+            local txt = class_name .. '& operator=(' .. class_name .. '&&);'
             add_txt_below_existing_def(txt)
         end
 

@@ -20,7 +20,7 @@ local function draw_virtual_text(txt, row)
     if txt then
         result = {}
         for line in txt:gmatch('[^\n]+') do
-            result[#result+1] = {{line, ''}}
+            result[#result+1] = {{line, 'TSCppHighlight'}}
         end
     end
 
