@@ -41,8 +41,8 @@ end
 
 local function end_preview()
     local config = configs.get_module "nt_cpp_tools"
-    vim.api.nvim_buf_del_keymap(0, 'n', config.preview.quit)
-    vim.api.nvim_buf_del_keymap(0, 'n', config.preview.accept)
+    vim.api.nvim_del_keymap('n', config.preview.quit)
+    vim.api.nvim_del_keymap('n', config.preview.accept)
     remove_virt_text()
     vim.cmd( [[autocmd! TSCppTools *]])
 end
@@ -68,10 +68,10 @@ function M.start_preview(txt, insert_row, on_accept_cb)
 
     local config = configs.get_module "nt_cpp_tools"
 
-    vim.api.nvim_buf_set_keymap(0, 'n', config.preview.quit,
+    vim.api.nvim_set_keymap('n', config.preview.quit,
         ":lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.flush_and_end_preview()<CR>",
         keymap_config)
-    vim.api.nvim_buf_set_keymap(0, 'n', config.preview.accept,
+    vim.api.nvim_set_keymap('n', config.preview.accept,
         ":lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.accept_and_end_preview()<CR>",
         keymap_config)
 
