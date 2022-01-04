@@ -43,3 +43,17 @@ nt_cpp_tools = {
 | `TSCppMakeConcreteClass`   | Create a concrete class implementing all the pure virtual functions        |
 | `TSCppRuleOf3`   | Adds the missing function declarations to the class to obey the Rule of 3 (if eligible)        |
 | `TSCppRuleOf5`   | Adds the missing function declarations to the class to obey the Rule of 5 (if eligible)        |
+
+## Example
+
+1. `TSCppDefineClassFunc`
+
+![TSCppDefineClassFunc](./docs/TSImplementFunc.gif)
+
+3. `TSCppMakeConcreteClass`
+
+![TSCppMakeConcreteClass](./docs/TSConcreteClass.gif)
+
+5. `TSCppRuleOf3`
+
+![TSCppRuleOf3](./docs/TSRuleOf3.gif)
