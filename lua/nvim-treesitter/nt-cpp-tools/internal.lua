@@ -5,30 +5,7 @@ local previewer = require("nvim-treesitter.nt-cpp-tools.preview_printer")
 
 local M = {}
 
-local function  get_visual_range()
-  local _, csrow, cscol, _ = unpack(vim.fn.getpos("'<"))
-  local _, cerow, cecol, _ = unpack(vim.fn.getpos("'>"))
-  if csrow < cerow or (csrow == cerow and cscol <= cecol) then
-    return csrow - 1, cscol - 1, cerow - 1, cecol
-  else
-    return cerow - 1, cecol - 1, csrow - 1, cscol
-  end
-end
-
-local function run_on_nodes(query, runner)
-    local sel_start_row, sel_end_row
-    print(vim.fn.mode())
-    if vim.fn.mode() == 'v' then
-        sel_start_row = vim.fn.getpos("v")
-        sel_end_row = vim.fn.getpos(".")
-    else
-        sel_start_row, _, sel_end_row, _ = get_visual_range()
-        --_, sel_end_row, _, _ = unpack(vim.fn.getpos("."))
-        --sel_end_row = sel_end_row - 1
-        --sel_start_row = sel_end_row
-    end
-    print('range : ' .. sel_start_row .. ' ' .. sel_end_row)
-
+local function run_on_nodes(query, runner, sel_start_row, sel_end_row)
     local bufnr = 0
     local ft = vim.api.nvim_buf_get_option(bufnr, 'ft')
 
@@ -42,7 +19,7 @@ local function run_on_nodes(query, runner)
         if pattern == nil then
             break
         end
-        runner(query.captures, match, {start_row = sel_start_row, end_row = sel_end_row})
+        runner(query.captures, match)
     end
 
     return true
@@ -60,22 +37,22 @@ local function add_text_edit(text, start_row, start_col)
     vim.lsp.util.apply_text_edits(edit, 0)
 end
 
-function M.imp_func()
+function M.imp_func(range_start, range_end)
+    range_start = range_start - 1
+    range_end = range_end - 1
+
     local query = ts_query.get_query('cpp', 'outside_class_def')
 
     local class = ''
     local results = {}
     local e_row = 0;
-    local selected_range = {}
-    local runner =  function(captures, match, select_range)
+    local runner =  function(captures, match)
         for cid, node in pairs(match) do
             local cap_str = captures[cid]
             local value = ''
             for id, line in pairs(ts_utils.get_node_text(node)) do
                 value = (id == 1 and line or value .. '\n' .. line)
             end
-
-            selected_range = select_range
 
             local start_row, _, end_row, _ = node:range()
 
@@ -110,13 +87,13 @@ function M.imp_func()
         end
     end
 
-    if not run_on_nodes(query, runner) then
+    if not run_on_nodes(query, runner, range_start, range_end) then
         return
     end
 
     local output = ''
     for _, fun in ipairs(results) do
-        if fun.e <= selected_range.end_row and fun.s >= selected_range.start_row and fun.fun_dec ~= '' then
+        if fun.e <= range_end and fun.s >= range_start and fun.fun_dec ~= '' then
             output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
         end
     end
@@ -131,12 +108,15 @@ function M.imp_func()
 
 end
 
-function M.concrete_class_imp()
+function M.concrete_class_imp(range_start, range_end)
+    range_start = range_start - 1
+    range_end = range_end - 1
+
     local query = ts_query.get_query('cpp', 'concrete_implement')
     local base_class = ''
     local results = {}
-    local e_row;
-    local runner =  function(captures, matches, _)
+    local e_row
+    local runner =  function(captures, matches)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
             local value = ''
@@ -155,7 +135,7 @@ function M.concrete_class_imp()
         end
     end
 
-    if not run_on_nodes(query, runner) then
+    if not run_on_nodes(query, runner, range_start, range_end) then
         return
     end
 
@@ -173,7 +153,10 @@ function M.concrete_class_imp()
     previewer.start_preview(class, e_row + 1, on_preview_succces)
 end
 
-function M.rule_of_5(limit_at_3)
+function M.rule_of_5(limit_at_3, range_start, range_end)
+    range_start = range_start - 1
+    range_end = range_end - 1
+
     local query = ts_query.get_query('cpp', 'special_function_detectors')
 
     local checkers = {
@@ -193,7 +176,7 @@ function M.rule_of_5(limit_at_3)
         end
     end
 
-    local runner = function(captures, matches, _)
+    local runner = function(captures, matches)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
             local value = ''
@@ -225,7 +208,7 @@ function M.rule_of_5(limit_at_3)
         end
     end
 
-    if not run_on_nodes(query, runner) then
+    if not run_on_nodes(query, runner, range_start, range_end) then
         return
     end
 
@@ -314,24 +297,28 @@ end
 M.commands = {
     TSCppDefineClassFunc = {
         run = M.imp_func,
+        f_args = "<line1>, <line2>",
         args = {
             "-range"
         }
     },
     TSCppMakeConcreteClass = {
         run = M.concrete_class_imp,
+        f_args = "<line1>, <line2>",
         args = {
             "-range"
         }
     },
     TSCppRuleOf3 = {
-        run = function () M.rule_of_5(true) end,
+        run = function (s, e) M.rule_of_5(true, s, e) end,
+        f_args = "<line1>, <line2>",
         args = {
             "-range"
         }
     },
     TSCppRuleOf5 = {
-        run = function () M.rule_of_5(false) end,
+        run = function (s, e) M.rule_of_5(false, s, e) end,
+        f_args = "<line1>, <line2>",
         args = {
             "-range"
         }
