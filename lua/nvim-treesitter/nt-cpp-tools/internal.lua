@@ -37,7 +37,7 @@ local function run_on_nodes(query, runner)
         if pattern == nil then
             break
         end
-        runner(query.captures, match)
+        runner(query.captures, match, {start_row = sel_start_row, end_row = sel_end_row})
     end
 
     return true
@@ -61,7 +61,8 @@ function M.imp_func()
     local class = ''
     local results = {}
     local e_row = 0;
-    local runner =  function(captures, match)
+    local selected_range = {}
+    local runner =  function(captures, match, select_range)
         for cid, node in pairs(match) do
             local cap_str = captures[cid]
             local value = ''
@@ -69,20 +70,37 @@ function M.imp_func()
                 value = (id == 1 and line or value .. '\n' .. line)
             end
 
+            selected_range = select_range
+
+            local start_row, _, end_row, _ = node:range()
+
+            local update_range= function (result)
+                if not result.e or result.e < end_row then result.e = end_row end
+                if not result.s or result.s > start_row then result.s = start_row end
+            end
+
             if  cap_str == 'class' then
-                _, _, e_row, _ = node:range()
+                e_row = end_row
             elseif cap_str == 'class_name' then
                 class = value
-                results[#results + 1] = { ret_type = '', fun_dec = '' }
+                results[#results + 1] = { ret_type = '', fun_dec = '' , s = nil, e = nil}
             elseif cap_str == 'return_type_qualifier' then
-                results[#results].ret_type = value .. ' ' .. results[#results].ret_type
+                local result = results[#results]
+                result.ret_type = value .. ' ' .. result.ret_type
+                update_range(result)
             elseif cap_str == 'return_type' then
-                results[#results].ret_type = results[#results].ret_type .. value
+                local result = results[#results]
+                result.ret_type = result.ret_type .. value
+                update_range(result)
             elseif cap_str == 'fun_dec' then
-                results[#results].fun_dec = value:gsub('override$', '')
+                local result = results[#results]
+                result.fun_dec = value:gsub('override$', '')
+                update_range(result)
             elseif cap_str == 'ref_fun_dec' then
-                results[#results].ret_type = results[#results].ret_type .. '&'
-                results[#results].fun_dec = value:gsub('^& *', ''):gsub('override$', '')
+                local result = results[#results]
+                result.ret_type = result.ret_type .. '&'
+                result.fun_dec = value:gsub('^& *', ''):gsub('override$', '')
+                update_range(result)
             end
         end
     end
@@ -93,16 +111,18 @@ function M.imp_func()
 
     local output = ''
     for _, fun in ipairs(results) do
-        if fun.fun_dec ~= '' then
+        if fun.e <= selected_range.end_row and fun.s >= selected_range.start_row and fun.fun_dec ~= '' then
             output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
         end
     end
 
-    local on_preview_succces = function (row)
-        add_text_edit(output, row, 0)
-    end
+    if output ~= '' then
+        local on_preview_succces = function (row)
+            add_text_edit(output, row, 0)
+        end
 
-    previewer.start_preview(output, e_row + 1, on_preview_succces)
+        previewer.start_preview(output, e_row + 1, on_preview_succces)
+    end
 
 end
 
@@ -111,7 +131,7 @@ function M.concrete_class_imp()
     local base_class = ''
     local results = {}
     local e_row;
-    local runner =  function(captures, matches)
+    local runner =  function(captures, matches, _)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
             local value = ''
@@ -168,7 +188,7 @@ function M.rule_of_5(limit_at_3)
         end
     end
 
-    local runner = function(captures, matches)
+    local runner = function(captures, matches, _)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
             local value = ''
