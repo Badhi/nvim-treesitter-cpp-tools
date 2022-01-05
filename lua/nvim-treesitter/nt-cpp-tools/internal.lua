@@ -17,12 +17,17 @@ end
 
 local function run_on_nodes(query, runner)
     local sel_start_row, sel_end_row
+    print(vim.fn.mode())
     if vim.fn.mode() == 'v' then
         sel_start_row = vim.fn.getpos("v")
         sel_end_row = vim.fn.getpos(".")
     else
         sel_start_row, _, sel_end_row, _ = get_visual_range()
+        --_, sel_end_row, _, _ = unpack(vim.fn.getpos("."))
+        --sel_end_row = sel_end_row - 1
+        --sel_start_row = sel_end_row
     end
+    print('range : ' .. sel_start_row .. ' ' .. sel_end_row)
 
     local bufnr = 0
     local ft = vim.api.nvim_buf_get_option(bufnr, 'ft')
