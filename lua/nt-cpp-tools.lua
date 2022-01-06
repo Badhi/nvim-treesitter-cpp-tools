@@ -1,9 +1,26 @@
 local queries = require "nvim-treesitter.query"
-local utils = require "nvim-treesitter.utils"
 
 local M = {}
 
--- TODO: In this function replace `module-template` with the actual name of your module.
+--TODO reuse the function provided by the treesitter utils
+local function setup_commands(commands)
+    for command_name, def in pairs(commands) do
+        local f_args = def.f_args or "<f-args>"
+        local call_fn = string.format(
+        "lua require'nvim-treesitter.nt-cpp-tools.internal'.commands.%s['run<bang>'](%s)",
+        command_name,
+        f_args
+        )
+        local parts = vim.tbl_flatten {
+            "command!",
+            def.args,
+            command_name,
+            call_fn,
+        }
+        vim.api.nvim_command(table.concat(parts, " "))
+    end
+end
+
 function M.init()
     vim.cmd([[ hi def TSCppHighlight guifg=#808080 ctermfg=244 ]])
     require "nvim-treesitter".define_modules {
@@ -22,6 +39,6 @@ function M.init()
     }
 end
 
-utils.setup_commands("nt-cpp-tools.internal", require"nvim-treesitter.nt-cpp-tools.internal".commands)
+setup_commands(require"nvim-treesitter.nt-cpp-tools.internal".commands)
 
 return M

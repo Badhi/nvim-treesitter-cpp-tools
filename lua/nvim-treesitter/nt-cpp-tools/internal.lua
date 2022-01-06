@@ -93,7 +93,7 @@ function M.imp_func(range_start, range_end)
 
     local output = ''
     for _, fun in ipairs(results) do
-        if fun.e <= range_end and fun.s >= range_start and fun.fun_dec ~= '' then
+        if fun.e >= range_start and fun.s <= range_end and fun.fun_dec ~= '' then
             output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
         end
     end
