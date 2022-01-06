@@ -5,25 +5,7 @@ local previewer = require("nvim-treesitter.nt-cpp-tools.preview_printer")
 
 local M = {}
 
-local function  get_visual_range()
-  local _, csrow, cscol, _ = unpack(vim.fn.getpos("'<"))
-  local _, cerow, cecol, _ = unpack(vim.fn.getpos("'>"))
-  if csrow < cerow or (csrow == cerow and cscol <= cecol) then
-    return csrow - 1, cscol - 1, cerow - 1, cecol
-  else
-    return cerow - 1, cecol - 1, csrow - 1, cscol
-  end
-end
-
-local function run_on_nodes(query, runner)
-    local sel_start_row, sel_end_row
-    if vim.fn.mode() == 'v' then
-        sel_start_row = vim.fn.getpos("v")
-        sel_end_row = vim.fn.getpos(".")
-    else
-        sel_start_row, _, sel_end_row, _ = get_visual_range()
-    end
-
+local function run_on_nodes(query, runner, sel_start_row, sel_end_row)
     local bufnr = 0
     local ft = vim.api.nvim_buf_get_option(bufnr, 'ft')
 
@@ -55,7 +37,10 @@ local function add_text_edit(text, start_row, start_col)
     vim.lsp.util.apply_text_edits(edit, 0)
 end
 
-function M.imp_func()
+function M.imp_func(range_start, range_end)
+    range_start = range_start - 1
+    range_end = range_end - 1
+
     local query = ts_query.get_query('cpp', 'outside_class_def')
 
     local class = ''
@@ -69,48 +54,68 @@ function M.imp_func()
                 value = (id == 1 and line or value .. '\n' .. line)
             end
 
+            local start_row, _, end_row, _ = node:range()
+
+            local update_range= function (result)
+                if not result.e or result.e < end_row then result.e = end_row end
+                if not result.s or result.s > start_row then result.s = start_row end
+            end
+
             if  cap_str == 'class' then
-                _, _, e_row, _ = node:range()
+                e_row = end_row
             elseif cap_str == 'class_name' then
                 class = value
-                results[#results + 1] = { ret_type = '', fun_dec = '' }
+                results[#results + 1] = { ret_type = '', fun_dec = '' , s = nil, e = nil}
             elseif cap_str == 'return_type_qualifier' then
-                results[#results].ret_type = value .. ' ' .. results[#results].ret_type
+                local result = results[#results]
+                result.ret_type = value .. ' ' .. result.ret_type
+                update_range(result)
             elseif cap_str == 'return_type' then
-                results[#results].ret_type = results[#results].ret_type .. value
+                local result = results[#results]
+                result.ret_type = result.ret_type .. value
+                update_range(result)
             elseif cap_str == 'fun_dec' then
-                results[#results].fun_dec = value:gsub('override$', '')
+                local result = results[#results]
+                result.fun_dec = value:gsub('override$', '')
+                update_range(result)
             elseif cap_str == 'ref_fun_dec' then
-                results[#results].ret_type = results[#results].ret_type .. '&'
-                results[#results].fun_dec = value:gsub('^& *', ''):gsub('override$', '')
+                local result = results[#results]
+                result.ret_type = result.ret_type .. '&'
+                result.fun_dec = value:gsub('^& *', ''):gsub('override$', '')
+                update_range(result)
             end
         end
     end
 
-    if not run_on_nodes(query, runner) then
+    if not run_on_nodes(query, runner, range_start, range_end) then
         return
     end
 
     local output = ''
     for _, fun in ipairs(results) do
-        if fun.fun_dec ~= '' then
+        if fun.e >= range_start and fun.s <= range_end and fun.fun_dec ~= '' then
             output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
         end
     end
 
-    local on_preview_succces = function (row)
-        add_text_edit(output, row, 0)
-    end
+    if output ~= '' then
+        local on_preview_succces = function (row)
+            add_text_edit(output, row, 0)
+        end
 
-    previewer.start_preview(output, e_row + 1, on_preview_succces)
+        previewer.start_preview(output, e_row + 1, on_preview_succces)
+    end
 
 end
 
-function M.concrete_class_imp()
+function M.concrete_class_imp(range_start, range_end)
+    range_start = range_start - 1
+    range_end = range_end - 1
+
     local query = ts_query.get_query('cpp', 'concrete_implement')
     local base_class = ''
     local results = {}
-    local e_row;
+    local e_row
     local runner =  function(captures, matches)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
@@ -130,7 +135,7 @@ function M.concrete_class_imp()
         end
     end
 
-    if not run_on_nodes(query, runner) then
+    if not run_on_nodes(query, runner, range_start, range_end) then
         return
     end
 
@@ -148,7 +153,10 @@ function M.concrete_class_imp()
     previewer.start_preview(class, e_row + 1, on_preview_succces)
 end
 
-function M.rule_of_5(limit_at_3)
+function M.rule_of_5(limit_at_3, range_start, range_end)
+    range_start = range_start - 1
+    range_end = range_end - 1
+
     local query = ts_query.get_query('cpp', 'special_function_detectors')
 
     local checkers = {
@@ -200,7 +208,7 @@ function M.rule_of_5(limit_at_3)
         end
     end
 
-    if not run_on_nodes(query, runner) then
+    if not run_on_nodes(query, runner, range_start, range_end) then
         return
     end
 
@@ -289,24 +297,28 @@ end
 M.commands = {
     TSCppDefineClassFunc = {
         run = M.imp_func,
+        f_args = "<line1>, <line2>",
         args = {
             "-range"
         }
     },
     TSCppMakeConcreteClass = {
         run = M.concrete_class_imp,
+        f_args = "<line1>, <line2>",
         args = {
             "-range"
         }
     },
     TSCppRuleOf3 = {
-        run = function () M.rule_of_5(true) end,
+        run = function (s, e) M.rule_of_5(true, s, e) end,
+        f_args = "<line1>, <line2>",
         args = {
             "-range"
         }
     },
     TSCppRuleOf5 = {
-        run = function () M.rule_of_5(false) end,
+        run = function (s, e) M.rule_of_5(false, s, e) end,
+        f_args = "<line1>, <line2>",
         args = {
             "-range"
         }
