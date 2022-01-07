@@ -139,6 +139,11 @@ function M.concrete_class_imp(range_start, range_end)
         return
     end
 
+    if #results == 0 then
+        vim.notify('No virtual functions detected to implement')
+        return
+    end
+
     local class_name = vim.fn.input("New Name: ", base_class .. "Impl")
     local class = string.format('class %s : public %s\n{\npublic:\n', class_name, base_class)
     for _, imp in ipairs(results) do
