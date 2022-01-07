@@ -39,10 +39,11 @@ nt_cpp_tools = {
 
 | Command      | Feature |
 | ----------- | ----------- |
-| `TSCppDefineClassFunc`      | Implement out of class member function    |
+| `TSCppDefineClassFunc`      | Implement out of class member functions<br> *subset of functions can be implemented by selecting required function declarations using visual mode or simply keeping the cursor on the function declaration before calling the command*   |
 | `TSCppMakeConcreteClass`   | Create a concrete class implementing all the pure virtual functions        |
 | `TSCppRuleOf3`   | Adds the missing function declarations to the class to obey the Rule of 3 (if eligible)        |
 | `TSCppRuleOf5`   | Adds the missing function declarations to the class to obey the Rule of 5 (if eligible)        |
+
 
 ## Example
 
