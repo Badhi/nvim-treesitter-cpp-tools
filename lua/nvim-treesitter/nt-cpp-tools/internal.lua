@@ -46,6 +46,8 @@ function M.imp_func(range_start, range_end)
     local class = ''
     local results = {}
     local e_row = 0;
+    local templates_params = {}
+    local template_list
     local runner =  function(captures, match)
         for cid, node in pairs(match) do
             local cap_str = captures[cid]
@@ -83,6 +85,10 @@ function M.imp_func(range_start, range_end)
                 result.ret_type = result.ret_type .. '&'
                 result.fun_dec = value:gsub('^& *', ''):gsub('override$', '')
                 update_range(result)
+            elseif cap_str == 'template_parameters' then
+                table.insert(templates_params, value)
+            elseif cap_str == 'template_param_list' then
+                template_list = value
             end
         end
     end
@@ -91,10 +97,22 @@ function M.imp_func(range_start, range_end)
         return
     end
 
+    local class_template_tags
+    for i, temp in pairs(templates_params) do
+        if i == 1 then class_template_tags = '<' end
+        class_template_tags = class_template_tags .. temp
+        class_template_tags = i == #templates_params and class_template_tags .. '>' or class_template_tags .. ','
+    end
+
+
     local output = ''
     for _, fun in ipairs(results) do
         if fun.e >= range_start and fun.s <= range_end and fun.fun_dec ~= '' then
-            output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
+            if template_list then
+                output = 'template' .. template_list .. '\n'
+            end
+            output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) ..
+                        class .. (class_template_tags or '') .. '::' .. fun.fun_dec .. '\n{\n}\n'
         end
     end
 
