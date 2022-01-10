@@ -37,6 +37,25 @@ local function add_text_edit(text, start_row, start_col)
     vim.lsp.util.apply_text_edits(edit, 0)
 end
 
+function M.test(range_start, range_end)
+    local query = ts_query.get_query('cpp', 'test')
+    local runner =  function(captures, match)
+        for cid, node in pairs(match) do
+            local cap_str = captures[cid]
+            local value = ''
+            for id, line in pairs(ts_utils.get_node_text(node)) do
+                value = (id == 1 and line or value .. '\n' .. line)
+            end
+            print(cap_str .. ' - ' .. value)
+        end
+    end
+
+    if not run_on_nodes(query, runner, range_start, range_end) then
+        return
+    end
+
+end
+
 function M.imp_func(range_start, range_end)
     range_start = range_start - 1
     range_end = range_end - 1
@@ -346,6 +365,13 @@ M.commands = {
             "-range"
         }
     },
+    TSCppTest= {
+        run = M.test,
+        f_args = "<line1>, <line2>",
+        args = {
+            "-range"
+        }
+    }
 }
 
 return M
