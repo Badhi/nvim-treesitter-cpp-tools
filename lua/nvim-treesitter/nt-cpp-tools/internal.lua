@@ -37,6 +37,48 @@ local function add_text_edit(text, start_row, start_col)
     vim.lsp.util.apply_text_edits(edit, 0)
 end
 
+local function get_default_values_locations(t)
+    local positions = {}
+    for _, k in pairs(t:field('parameters')) do
+        local child_count = k:child_count()
+        -- inorder to remove strings easier,
+        -- doing reverse order since its easier to remove entries
+        for j = child_count-1, 0, -1 do
+            local child = k:child(j)
+            if child:type() == 'optional_parameter_declaration' then
+                local _, _, start_row, start_col = child:field('declarator')[1]:range()
+                local _, _, end_row, end_col = child:field('default_value')[1]:range()
+                table.insert(positions,
+                {   start_row = start_row,
+                    start_col = start_col,
+                    end_row = end_row,
+                    end_col = end_col
+                }
+                )
+                --print(vim.inspect(positions))
+            end
+        end
+    end
+    return positions
+end
+
+local function remove_entries_and_get_node_string(node, entries)
+    local base_row_offset, base_col_offset, _, _ = node:range()
+    local txt = ts_utils.get_node_text(node)
+    for _, entry in pairs(entries) do
+        entry.start_row = entry.start_row - base_row_offset + 1
+        entry.end_row = entry.end_row - base_row_offset + 1
+        if entry.start_row == entry.end_row then
+            local line = txt[entry.start_row]
+            local s = line:sub(1, entry.start_col - base_col_offset)
+            local e = line:sub(entry.end_col - base_col_offset + 1)
+            txt[entry.start_row] = s .. e
+        end
+    end
+    return txt
+end
+
+
 function M.imp_func(range_start, range_end)
     range_start = range_start - 1
     range_end = range_end - 1
@@ -50,7 +92,17 @@ function M.imp_func(range_start, range_end)
         for cid, node in pairs(match) do
             local cap_str = captures[cid]
             local value = ''
-            for id, line in pairs(ts_utils.get_node_text(node)) do
+
+            local txt
+            if cap_str == 'fun_dec' or cap_str == 'ref_fun_dec' then
+                print('test')
+                txt = remove_entries_and_get_node_string(node,
+                            get_default_values_locations(node))
+            else
+                txt = ts_utils.get_node_text(node)
+            end
+
+            for id, line in pairs(txt) do
                 value = (id == 1 and line or value .. '\n' .. line)
             end
 
@@ -81,7 +133,7 @@ function M.imp_func(range_start, range_end)
             elseif cap_str == 'ref_fun_dec' then
                 local result = results[#results]
                 result.ret_type = result.ret_type .. '&'
-                result.fun_dec = value:gsub('^& *', ''):gsub('override$', '')
+                result.fun_dec = value:gsub('override$', '')
                 update_range(result)
             end
         end
