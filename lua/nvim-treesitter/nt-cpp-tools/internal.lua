@@ -71,7 +71,7 @@ local function remove_entries_and_get_node_string(node, entries)
         entry.start_row = entry.start_row - base_row_offset + 1
         entry.end_row = entry.end_row - base_row_offset + 1
         -- start row is trimmed to the tagged other rows are not
-        local column_offset = entry.start_row > 0 and 0 or base_col_offset
+        local column_offset = entry.start_row > 1 and 0 or base_col_offset
         if entry.start_row == entry.end_row then
             local line = txt[entry.start_row]
             local s = line:sub(1, entry.start_col - column_offset)
