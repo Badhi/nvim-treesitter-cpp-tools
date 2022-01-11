@@ -62,6 +62,11 @@ local function get_default_values_locations(t)
     return positions
 end
 
+local class_node
+function M.test()
+    return class_node
+end
+
 local function remove_entries_and_get_node_string(node, entries)
     -- we expect entries to be sorted from end to begining when
     -- considering a row so that changing the statement will not
@@ -97,6 +102,42 @@ local function remove_entries_and_get_node_string(node, entries)
     return txt
 end
 
+local function get_template_params(t, get_parameters)
+    local prev_sibling = t:prev_named_sibling()
+
+    if not prev_sibling then
+        return nil, nil
+    end
+
+    if prev_sibling:type() ~= 'template_parameter_list' then
+        return nil, nil
+    end
+
+    local template_params = {}
+
+    if get_parameters then
+        local child_count = prev_sibling:named_child_count()
+        for c = 0, child_count-1, 1 do
+            local c_node = prev_sibling:named_child(c)
+            if c_node:type() == 'type_parameter_declaration' then
+                table.insert(template_params,
+                    ts_utils.get_node_text(c_node:named_child(0)))
+            end
+        end
+    end
+
+    return ts_utils.get_node_text(prev_sibling), template_params
+end
+
+local function table_to_text(txt)
+    local value
+    for id, line in pairs(txt) do
+        if line ~= '' then
+            value = (id == 1 and line or value .. '\n' .. line)
+        end
+    end
+    return value
+end
 
 function M.imp_func(range_start, range_end)
     range_start = range_start - 1
@@ -106,8 +147,8 @@ function M.imp_func(range_start, range_end)
 
     local class = ''
     local results = {}
-    local e_row = 0;
-    local templates_params = {}
+    local e_row;
+    local class_template_tags
     local template_list
     local runner =  function(captures, match)
         for cid, node in pairs(match) do
@@ -122,11 +163,7 @@ function M.imp_func(range_start, range_end)
                 txt = ts_utils.get_node_text(node)
             end
 
-            for id, line in pairs(txt) do
-                if line ~= '' then
-                    value = (id == 1 and line or value .. '\n' .. line)
-                end
-            end
+            value = table_to_text(txt)
 
             local start_row, _, end_row, _ = node:range()
 
@@ -136,10 +173,21 @@ function M.imp_func(range_start, range_end)
             end
 
             if  cap_str == 'class' then
+                if not e_row then
+                    local templates_params
+                    template_list, templates_params = get_template_params(node, true)
+                    template_list = table_to_text(template_list)
+                    for i, temp in pairs(templates_params) do
+                        temp = table_to_text(temp)
+                        if i == 1 then class_template_tags = '<' end
+                        class_template_tags = class_template_tags .. temp
+                        class_template_tags = i == #templates_params and class_template_tags .. '>' or class_template_tags .. ','
+                    end
+                end
                 e_row = end_row
             elseif cap_str == 'class_name' then
                 class = value
-                results[#results + 1] = { ret_type = '', fun_dec = '' , s = nil, e = nil}
+                results[#results + 1] = { template = '', ret_type = '', fun_dec = '' , s = nil, e = nil}
             elseif cap_str == 'return_type_qualifier' then
                 local result = results[#results]
                 result.ret_type = value .. ' ' .. result.ret_type
@@ -150,17 +198,21 @@ function M.imp_func(range_start, range_end)
                 update_range(result)
             elseif cap_str == 'fun_dec' then
                 local result = results[#results]
+                local fun_templates, _= get_template_params(node:parent(), false)
+                if fun_templates then
+                    result.template = ' template'  .. table_to_text(fun_templates)
+                end
                 result.fun_dec = value:gsub('override$', '')
                 update_range(result)
             elseif cap_str == 'ref_fun_dec' then
                 local result = results[#results]
+                local ref_fun_templates, _= get_template_params(node:parent():parent(), false)
+                if ref_fun_templates then
+                    result.template = ' template' .. table_to_text(ref_fun_templates)
+                end
                 result.ret_type = result.ret_type .. '&'
                 result.fun_dec = value:gsub('override$', '')
                 update_range(result)
-            elseif cap_str == 'template_parameters' then
-                table.insert(templates_params, value)
-            elseif cap_str == 'template_param_list' then
-                template_list = value
             end
         end
     end
@@ -169,19 +221,12 @@ function M.imp_func(range_start, range_end)
         return
     end
 
-    local class_template_tags
-    for i, temp in pairs(templates_params) do
-        if i == 1 then class_template_tags = '<' end
-        class_template_tags = class_template_tags .. temp
-        class_template_tags = i == #templates_params and class_template_tags .. '>' or class_template_tags .. ','
-    end
-
 
     local output = ''
     for _, fun in ipairs(results) do
         if fun.e >= range_start and fun.s <= range_end and fun.fun_dec ~= '' then
             if template_list then
-                output = 'template' .. template_list .. '\n'
+                output = 'template' .. template_list .. (fun.template) .. '\n'
             end
             output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) ..
                         class .. (class_template_tags or '') .. '::' .. fun.fun_dec .. '\n{\n}\n'
