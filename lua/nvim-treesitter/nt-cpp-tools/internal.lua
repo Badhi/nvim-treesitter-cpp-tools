@@ -37,24 +37,66 @@ local function add_text_edit(text, start_row, start_col)
     vim.lsp.util.apply_text_edits(edit, 0)
 end
 
-function M.test(range_start, range_end)
-    local query = ts_query.get_query('cpp', 'test')
-    local runner =  function(captures, match)
-        for cid, node in pairs(match) do
-            local cap_str = captures[cid]
-            local value = ''
-            for id, line in pairs(ts_utils.get_node_text(node)) do
-                value = (id == 1 and line or value .. '\n' .. line)
+
+local function get_default_values_locations(t)
+    local positions = {}
+    for _, k in pairs(t:field('parameters')) do
+        local child_count = k:child_count()
+        -- inorder to remove strings easier,
+        -- doing reverse order
+        for j = child_count-1, 0, -1 do
+            local child = k:child(j)
+            if child:type() == 'optional_parameter_declaration' then
+                local _, _, start_row, start_col = child:field('declarator')[1]:range()
+                local _, _, end_row, end_col = child:field('default_value')[1]:range()
+                table.insert(positions,
+                {   start_row = start_row,
+                    start_col = start_col,
+                    end_row = end_row,
+                    end_col = end_col
+                }
+                )
             end
-            print(cap_str .. ' - ' .. value)
         end
     end
-
-    if not run_on_nodes(query, runner, range_start, range_end) then
-        return
-    end
-
+    return positions
 end
+
+local function remove_entries_and_get_node_string(node, entries)
+    -- we expect entries to be sorted from end to begining when
+    -- considering a row so that changing the statement will not
+    -- mess up the indexes of the entries
+    local base_row_offset, base_col_offset, _, _ = node:range()
+    local txt = ts_utils.get_node_text(node)
+    for _, entry in pairs(entries) do
+        entry.start_row = entry.start_row - base_row_offset + 1
+        entry.end_row = entry.end_row - base_row_offset + 1
+        -- start row is trimmed to the tagged other rows are not
+        local column_offset = entry.start_row > 1 and 0 or base_col_offset
+        if entry.start_row == entry.end_row then
+            local line = txt[entry.start_row]
+            local s = line:sub(1, entry.start_col - column_offset)
+            local e = line:sub(entry.end_col - column_offset + 1)
+            txt[entry.start_row] = s .. e
+        else
+            txt[entry.start_row] = txt[entry.start_row]:sub(1, entry.start_col - column_offset)
+            -- we will just mark the rows in between as empty since deleting will
+            -- mess up locations of following entries
+            for l = entry.start_row + 1, entry.end_row - 1, 1 do
+                txt[l] = ''
+            end
+
+            local tail_txt = txt[entry.end_row]
+            local indent_start, indent_end = tail_txt:find('^ *')
+            local indent_str = string.format('%' .. (indent_end - indent_start) .. 's', ' ')
+
+            -- no need to add column offset since we know end_row is not trimmed
+            txt[entry.end_row] = indent_str .. tail_txt:sub(entry.end_col + 1)
+        end
+    end
+    return txt
+end
+
 
 function M.imp_func(range_start, range_end)
     range_start = range_start - 1
@@ -71,8 +113,19 @@ function M.imp_func(range_start, range_end)
         for cid, node in pairs(match) do
             local cap_str = captures[cid]
             local value = ''
-            for id, line in pairs(ts_utils.get_node_text(node)) do
-                value = (id == 1 and line or value .. '\n' .. line)
+
+            local txt
+            if cap_str == 'fun_dec' or cap_str == 'ref_fun_dec' then
+                txt = remove_entries_and_get_node_string(node,
+                            get_default_values_locations(node))
+            else
+                txt = ts_utils.get_node_text(node)
+            end
+
+            for id, line in pairs(txt) do
+                if line ~= '' then
+                    value = (id == 1 and line or value .. '\n' .. line)
+                end
             end
 
             local start_row, _, end_row, _ = node:range()
@@ -102,7 +155,7 @@ function M.imp_func(range_start, range_end)
             elseif cap_str == 'ref_fun_dec' then
                 local result = results[#results]
                 result.ret_type = result.ret_type .. '&'
-                result.fun_dec = value:gsub('^& *', ''):gsub('override$', '')
+                result.fun_dec = value:gsub('override$', '')
                 update_range(result)
             elseif cap_str == 'template_parameters' then
                 table.insert(templates_params, value)
