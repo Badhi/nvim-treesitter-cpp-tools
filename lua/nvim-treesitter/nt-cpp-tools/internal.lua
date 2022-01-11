@@ -42,7 +42,7 @@ local function get_default_values_locations(t)
     for _, k in pairs(t:field('parameters')) do
         local child_count = k:child_count()
         -- inorder to remove strings easier,
-        -- doing reverse order since its easier to remove entries
+        -- doing reverse order
         for j = child_count-1, 0, -1 do
             local child = k:child(j)
             if child:type() == 'optional_parameter_declaration' then
@@ -84,8 +84,13 @@ local function remove_entries_and_get_node_string(node, entries)
             for l = entry.start_row + 1, entry.end_row - 1, 1 do
                 txt[l] = ''
             end
+
+            local tail_txt = txt[entry.end_row]
+            local indent_start, indent_end = tail_txt:find('^ *')
+            local indent_str = string.format('%' .. (indent_end - indent_start) .. 's', ' ')
+
             -- no need to add column offset since we know end_row is not trimmed
-            txt[entry.end_row] = txt[entry.end_row]:sub(entry.end_col + 1)
+            txt[entry.end_row] = indent_str .. tail_txt:sub(entry.end_col + 1)
         end
     end
     return txt
