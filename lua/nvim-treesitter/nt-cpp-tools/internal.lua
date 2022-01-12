@@ -37,25 +37,33 @@ local function add_text_edit(text, start_row, start_col)
     vim.lsp.util.apply_text_edits(edit, 0)
 end
 
+local function t2s(txt)
+    local value
+    for id, line in pairs(txt) do
+        if line ~= '' then
+            value = (id == 1 and line or value .. '\n' .. line)
+        end
+    end
+    return value
+end
+
 local function get_default_values_locations(t)
     local positions = {}
-    for _, k in pairs(t:field('parameters')) do
-        local child_count = k:child_count()
-        -- inorder to remove strings easier,
-        -- doing reverse order
-        for j = child_count-1, 0, -1 do
-            local child = k:child(j)
-            if child:type() == 'optional_parameter_declaration' then
-                local _, _, start_row, start_col = child:field('declarator')[1]:range()
-                local _, _, end_row, end_col = child:field('default_value')[1]:range()
-                table.insert(positions,
-                {   start_row = start_row,
-                    start_col = start_col,
-                    end_row = end_row,
-                    end_col = end_col
-                }
-                )
-            end
+    local child_count = t:child_count()
+    -- inorder to remove strings easier,
+    -- doing reverse order
+    for j = child_count-1, 0, -1 do
+        local child = t:child(j)
+        if child:type() == 'optional_parameter_declaration' then
+            local _, _, start_row, start_col = child:field('declarator')[1]:range()
+            local _, _, end_row, end_col = child:field('default_value')[1]:range()
+            table.insert(positions,
+            {   start_row = start_row,
+                start_col = start_col,
+                end_row = end_row,
+                end_col = end_col
+            }
+            )
         end
     end
     return positions
@@ -96,6 +104,48 @@ local function remove_entries_and_get_node_string(node, entries)
     return txt
 end
 
+-- supports both reference return type and non reference return type
+-- and no return type member functions
+local function get_member_function_data(node)
+    local result = { ret_type = '', fun_dec = ''}
+    local return_node = node:field('type')[1]
+    local function_dec_node = node:field('declarator')[1]
+
+    if next(node:field('default_value')) ~= nil then -- pure virtual
+        return nil
+    end
+
+    result.ret_type = t2s(ts_utils.get_node_text(return_node)) -- return tye
+    local node_child_count = node:named_child_count()
+    for c = 0, node_child_count - 1, 1 do
+        local child = node:named_child(c)
+        if child:type() == 'type_qualifier' then -- return constness
+            result.ret_type = t2s(ts_utils.get_node_text(child)) .. ' ' .. result.ret_type
+            break
+        end
+    end
+
+    if function_dec_node:type() == 'reference_declarator' then
+        function_dec_node = function_dec_node:named_child(0)
+        result.ret_type = result.ret_type .. '&'
+    end
+
+    result.fun_dec = t2s(ts_utils.get_node_text(function_dec_node:field('declarator')[1]))
+
+    local fun_params = function_dec_node:field('parameters')[1]
+    result.fun_dec = result.fun_dec .. t2s(remove_entries_and_get_node_string(fun_params,
+                                                get_default_values_locations(fun_params)))
+
+    local fun_dec_child_count = function_dec_node:named_child_count()
+    for c = 0, fun_dec_child_count - 1, 1 do
+        local child = function_dec_node:named_child(c)
+        if child:type() == 'type_qualifier' then -- function constness
+            result.fun_dec = result.fun_dec .. ' ' .. t2s(ts_utils.get_node_text(child))
+            break
+        end
+    end
+    return result
+end
 
 function M.imp_func(range_start, range_end)
     range_start = range_start - 1
@@ -103,57 +153,30 @@ function M.imp_func(range_start, range_end)
 
     local query = ts_query.get_query('cpp', 'outside_class_def')
 
-    local class = ''
+    local class
+    local e_row
     local results = {}
-    local e_row = 0;
     local runner =  function(captures, match)
         for cid, node in pairs(match) do
             local cap_str = captures[cid]
-            local value = ''
-
-            local txt
-            if cap_str == 'fun_dec' or cap_str == 'ref_fun_dec' then
-                txt = remove_entries_and_get_node_string(node,
-                            get_default_values_locations(node))
-            else
-                txt = ts_utils.get_node_text(node)
-            end
-
-            for id, line in pairs(txt) do
-                if line ~= '' then
-                    value = (id == 1 and line or value .. '\n' .. line)
-                end
-            end
-
-            local start_row, _, end_row, _ = node:range()
-
-            local update_range= function (result)
-                if not result.e or result.e < end_row then result.e = end_row end
-                if not result.s or result.s > start_row then result.s = start_row end
-            end
 
             if  cap_str == 'class' then
-                e_row = end_row
+                if not e_row then
+                    local _, _, end_row, _ = node:range()
+                    e_row = end_row
+                end
             elseif cap_str == 'class_name' then
-                class = value
-                results[#results + 1] = { ret_type = '', fun_dec = '' , s = nil, e = nil}
-            elseif cap_str == 'return_type_qualifier' then
-                local result = results[#results]
-                result.ret_type = value .. ' ' .. result.ret_type
-                update_range(result)
-            elseif cap_str == 'return_type' then
-                local result = results[#results]
-                result.ret_type = result.ret_type .. value
-                update_range(result)
-            elseif cap_str == 'fun_dec' then
-                local result = results[#results]
-                result.fun_dec = value:gsub('override$', '')
-                update_range(result)
-            elseif cap_str == 'ref_fun_dec' then
-                local result = results[#results]
-                result.ret_type = result.ret_type .. '&'
-                result.fun_dec = value:gsub('override$', '')
-                update_range(result)
+                if not class then
+                    class =  t2s(ts_utils.get_node_text(node))
+                end
+            elseif cap_str == 'member_function' then
+                local fun_start, _, fun_end, _ = node:range()
+                if fun_end >= range_start and fun_start <= range_end then
+                    local member_data = get_member_function_data(node)
+                    if member_data then
+                        table.insert(results, member_data)
+                    end
+                end
             end
         end
     end
@@ -164,8 +187,8 @@ function M.imp_func(range_start, range_end)
 
     local output = ''
     for _, fun in ipairs(results) do
-        if fun.e >= range_start and fun.s <= range_end and fun.fun_dec ~= '' then
-            output = output .. (fun.ret_type ~= '' and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
+        if fun.fun_dec ~= '' then
+            output = output .. (fun.ret_type and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
         end
     end
 
@@ -197,11 +220,10 @@ function M.concrete_class_imp(range_start, range_end)
 
             if cap_str == 'base_class_name' then
                 base_class = value
-                results[#results + 1] = ''
             elseif cap_str == 'class' then
                 _, _, e_row, _ = node:range()
             elseif cap_str == 'virtual' then
-                results[#results] = value:gsub('^virtual', ''):gsub([[= *0]], 'override')
+                table.insert(results, value:gsub('^virtual', ''):gsub([[= *0]], 'override'))
             end
         end
     end
