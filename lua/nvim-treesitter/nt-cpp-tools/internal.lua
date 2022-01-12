@@ -223,7 +223,7 @@ function M.concrete_class_imp(range_start, range_end)
             elseif cap_str == 'class' then
                 _, _, e_row, _ = node:range()
             elseif cap_str == 'virtual' then
-                table.insert(results, value:gsub('^virtual', ''):gsub([[= *0]], 'override'))
+                results[#results+1] = value:gsub('^virtual', ''):gsub([[= *0]], 'override')
             end
         end
     end
