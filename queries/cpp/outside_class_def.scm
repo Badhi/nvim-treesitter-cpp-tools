@@ -3,7 +3,7 @@
     body: (field_declaration_list
         [
             (field_declaration
-                (function_declarator)
+                [(function_declarator) (reference_declarator)]
             ) 
             (declaration
                 (function_declarator)
