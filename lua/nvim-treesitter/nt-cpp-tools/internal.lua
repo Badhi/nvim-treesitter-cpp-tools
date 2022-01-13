@@ -104,10 +104,49 @@ local function remove_entries_and_get_node_string(node, entries)
     return txt
 end
 
+local function check_get_template_info(node)
+    if node:parent():type() ~= 'template_declaration' then
+        return nil, nil
+    end
+
+    local typename_names = {}
+    local remove_entries = {}
+
+    local template_param_list = node:parent():field('parameters')[1]
+    local parameters_count = template_param_list:named_child_count()
+    for param_id = parameters_count - 1, 0, -1 do
+        local param_node = template_param_list:named_child(param_id)
+        if param_node:type() == 'type_parameter_declaration' then
+            table.insert(typename_names,
+                    t2s(ts_utils.get_node_text(param_node:named_child(0))))
+        elseif param_node:type() == 'optional_type_parameter_declaration' then
+            local type_identifier = param_node:field('name')[1]
+            table.insert(typename_names,
+                    t2s(ts_utils.get_node_text(type_identifier)))
+            local _, _, start_row, start_col = type_identifier:range()
+            local _, _, end_row, end_col = param_node:field('default_type')[1]:range()
+            table.insert(remove_entries,
+            {   start_row = start_row,
+                start_col = start_col,
+                end_row = end_row,
+                end_col = end_col
+            }
+            )
+        end
+    end
+    return t2s(remove_entries_and_get_node_string(template_param_list, remove_entries)),
+                typename_names
+end
+
+
 -- supports both reference return type and non reference return type
 -- and no return type member functions
 local function get_member_function_data(node)
-    local result = { ret_type = '', fun_dec = ''}
+    local result = {template = '', ret_type = '', fun_dec = ''}
+
+    result.template, _ = check_get_template_info(node)
+    result.template = result.template and 'template ' .. result.template
+
     local return_node = node:field('type')[1]
     local function_dec_node = node:field('declarator')[1]
 
@@ -156,6 +195,8 @@ function M.imp_func(range_start, range_end)
     local class
     local e_row
     local results = {}
+    local class_template_statement
+    local class_template_params
     local runner =  function(captures, match)
         for cid, node in pairs(match) do
             local cap_str = captures[cid]
@@ -164,6 +205,15 @@ function M.imp_func(range_start, range_end)
                 if not e_row then
                     local _, _, end_row, _ = node:range()
                     e_row = end_row
+                    local template_statement, params = check_get_template_info(node)
+                    if template_statement then
+                        class_template_statement = 'template ' .. template_statement
+                        for i = #params, 1, -1 do
+                            local val = params[i]
+                            class_template_params = (i == #params and '<' or class_template_params .. ',') .. val
+                        end
+                        class_template_params = class_template_params .. '>'
+                    end
                 end
             elseif cap_str == 'class_name' then
                 if not class then
@@ -188,7 +238,20 @@ function M.imp_func(range_start, range_end)
     local output = ''
     for _, fun in ipairs(results) do
         if fun.fun_dec ~= '' then
-            output = output .. (fun.ret_type and fun.ret_type .. ' ' or '' ) .. class .. '::' .. fun.fun_dec .. '\n{\n}\n'
+
+            local template_statements
+            if class_template_statement and fun.template then
+                template_statements = class_template_statement .. ' ' .. fun.template
+            elseif class_template_statement then
+                template_statements = class_template_statement
+            elseif fun.template then
+                template_statements = fun.template
+            end
+
+            output = output .. (template_statements and template_statements .. '\n' or '') ..
+                                (fun.ret_type and fun.ret_type .. ' ' or '' ) ..
+                                class .. (class_template_params or '') .. '::'
+                                .. fun.fun_dec .. '\n{\n}\n'
         end
     end
 
