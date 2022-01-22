@@ -1,0 +1,198 @@
+============================================
+def_constructor
+============================================
+class C 
+{
+    public:
+    C();
+};
+-----------------------------
+C::C()
+{
+}
+----------------------------
+4,4
+
+============================================
+destructor
+============================================
+class C 
+{
+    public:
+    ~C();
+};
+-----------------------------
+C::~C()
+{
+}
+----------------------------
+4,4
+
+============================================
+copy_constructor
+============================================
+class C 
+{
+    public:
+    C(const C&);
+};
+-----------------------------
+C::C(const C&)
+{
+}
+----------------------------
+4,4
+
+============================================
+copy_assignment
+============================================
+class C 
+{
+    public:
+    C& operator=(const C&);
+};
+-----------------------------
+C& C::operator=(const C&)
+{
+}
+----------------------------
+4,4
+
+===========================================
+with_return_type
+===========================================
+class C 
+{
+public:
+    void test();
+};
+-------------------------------------
+void C::test()
+{
+}
+-------------------------------------
+4, 4
+
+===========================================
+with_return_type_and_args
+===========================================
+class C 
+{
+public:
+    void test(int i);
+};
+-------------------------------------
+void C::test(int i)
+{
+}
+-------------------------------------
+4, 4
+
+=================================
+with_ref_return_type_and_args
+===============================
+#include <vector>
+class C 
+{
+public:
+    std::vector<int>& test(int i);
+};
+-------------------------
+std::vector<int>& C::test(int i)
+{
+}
+
+----------------------------
+5,5
+
+====================================
+default_value
+=================================
+#include <vector>
+class C 
+{
+public:
+    std::vector<int>& test(int i = 1);
+};
+------------------------------
+std::vector<int>& C::test(int i)
+{
+}
+
+-----------------------------
+5,5
+
+============================================
+const_func_const_reference_return
+============================================
+#include <vector>
+class C 
+{
+    public:
+    const std::vector<int>& j() const;
+};
+-----------------------------
+const std::vector<int>& C::j() const
+{
+}
+----------------------------
+5,5
+
+============================================
+const_func_const_reference_return_override
+============================================
+#include <vector>
+class A
+{
+public:
+    virtual const std::vector<int>& j() const = 0;
+};
+class C : public A
+{
+public:
+    const std::vector<int>& j() const override;
+};
+-----------------------------
+const std::vector<int>& C::j() const
+{
+}
+----------------------------
+10,10
+
+============================================
+class_template
+============================================
+#include <vector>
+template<typename T, typename J>
+class C 
+{
+    public:
+    const std::vector<int>& j() const;
+};
+-----------------------------
+template <typename T, typename J>
+const std::vector<int>& C<T,J>::j() const
+{
+}
+----------------------------
+6,6
+
+============================================
+class_template_function_template
+============================================
+#include <vector>
+template<typename T, typename J>
+class C 
+{
+    public:
+    template<typename H, typename K>
+    const std::vector<int>& j(K l, H f) const;
+};
+-----------------------------
+template <typename T, typename J> template <typename H, typename K>
+const std::vector<int>& C<T,J>::j(K l, H f) const
+{
+}
+----------------------------
+7,7
+
