@@ -196,3 +196,42 @@ const std::vector<int>& C<T,J>::j(K l, H f) const
 ----------------------------
 7,7
 
+============================================
+class_template_function_template_with_default_values
+============================================
+#include <vector>
+template<typename T, typename J = C>
+class C 
+{
+    public:
+    template<typename H, typename K = Z>
+    const std::vector<int>& j(K l, H f) const;
+};
+-----------------------------
+template <typename T, typename J> template <typename H, typename K>
+const std::vector<int>& C<T,J>::j(K l, H f) const
+{
+}
+----------------------------
+7,7
+
+============================================
+normal_nested_class
+============================================
+class C 
+{
+public:
+    class J
+    {
+    public:
+        void test();
+    }
+};
+-----------------------------
+void C::J:test()
+{
+}
+----------------------------
+7, 7
+
+

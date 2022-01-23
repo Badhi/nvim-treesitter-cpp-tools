@@ -142,7 +142,7 @@ end
 -- supports both reference return type and non reference return type
 -- and no return type member functions
 local function get_member_function_data(node)
-    local result = {template = '', ret_type = '', fun_dec = ''}
+    local result = {template = '', ret_type = '', fun_dec = '', class_details = nil}
 
     result.template, _ = check_get_template_info(node)
     result.template = result.template and 'template ' .. result.template
@@ -186,44 +186,53 @@ local function get_member_function_data(node)
     return result
 end
 
+local function find_class_details(member_node, member_data)
+    member_data.class_details = {}
+    local end_row
+    local class_node = member_node:parent():type() == 'template_declaration' and
+                        member_node:parent():parent():parent() or member_node:parent():parent()
+    repeat
+        local class_data = {}
+        class_data.name = t2s(ts_utils.get_node_text(class_node:field('name')[1]))
+
+        local template_statement, params = check_get_template_info(class_node)
+        if template_statement then
+            class_data.class_template_statement = 'template ' .. template_statement
+            for i = #params, 1, -1 do
+                local val = params[i]
+                class_data.class_template_params = (i == #params and '<' or
+                                class_data.class_template_params .. ',') .. val
+            end
+            class_data.class_template_params = class_data.class_template_params .. '>'
+        end
+
+        _, _, end_row, _ = class_node:range()
+        table.insert(member_data.class_details, class_data)
+
+        class_node = class_node:parent():type() == 'template_declaration' and
+                        class_node:parent():parent() or class_node:parent()
+    until class_node:type() ~= 'class_specifier'
+
+    return end_row
+end
+
 function M.imp_func(range_start, range_end)
     range_start = range_start - 1
     range_end = range_end - 1
 
     local query = ts_query.get_query('cpp', 'outside_class_def')
 
-    local class
     local e_row
     local results = {}
-    local class_template_statement
-    local class_template_params
     local runner =  function(captures, match)
         for cid, node in pairs(match) do
             local cap_str = captures[cid]
-
-            if  cap_str == 'class' then
-                if not e_row then
-                    local _, _, end_row, _ = node:range()
-                    e_row = end_row
-                    local template_statement, params = check_get_template_info(node)
-                    if template_statement then
-                        class_template_statement = 'template ' .. template_statement
-                        for i = #params, 1, -1 do
-                            local val = params[i]
-                            class_template_params = (i == #params and '<' or class_template_params .. ',') .. val
-                        end
-                        class_template_params = class_template_params .. '>'
-                    end
-                end
-            elseif cap_str == 'class_name' then
-                if not class then
-                    class =  t2s(ts_utils.get_node_text(node))
-                end
-            elseif cap_str == 'member_function' then
+            if cap_str == 'member_function' then
                 local fun_start, _, fun_end, _ = node:range()
                 if fun_end >= range_start and fun_start <= range_end then
                     local member_data = get_member_function_data(node)
                     if member_data then
+                        e_row = find_class_details(node, member_data)
                         table.insert(results, member_data)
                     end
                 end
@@ -239,18 +248,35 @@ function M.imp_func(range_start, range_end)
     for _, fun in ipairs(results) do
         if fun.fun_dec ~= '' then
 
+            local classes_name
+            local classes_template_statemets
+            print(vim.inspect(fun.class_details))
+
+            for h = #fun.class_details, 1, -1 do
+                local templ_class_name = fun.class_details[h].name ..
+                            (fun.class_details[h].class_template_params or '') .. '::'
+                classes_name = (h == #fun.class_details) and templ_class_name or classes_name .. templ_class_name
+                if not classes_template_statemets then
+                    classes_template_statemets = fun.class_details[h].class_template_statement
+                else
+                    classes_template_statemets = classes_template_statemets .. ' '
+                                            .. fun.class_details[h].class_template_statement
+                end
+            end
+
+
             local template_statements
-            if class_template_statement and fun.template then
-                template_statements = class_template_statement .. ' ' .. fun.template
-            elseif class_template_statement then
-                template_statements = class_template_statement
+            if classes_template_statemets and fun.template then
+                template_statements = classes_template_statemets .. ' ' .. fun.template
+            elseif classes_template_statemets  then
+                template_statements = classes_template_statemets
             elseif fun.template then
                 template_statements = fun.template
             end
 
             output = output .. (template_statements and template_statements .. '\n' or '') ..
                                 (fun.ret_type and fun.ret_type .. ' ' or '' ) ..
-                                class .. (class_template_params or '') .. '::'
+                                classes_name
                                 .. fun.fun_dec .. '\n{\n}\n'
         end
     end
