@@ -186,12 +186,21 @@ local function get_member_function_data(node)
     return result
 end
 
+local function get_nth_parent(node, n)
+    local parent = node
+    for _ = 0 , n , 1 do
+        parent = parent:parent()
+        if not parent then return nil end
+    end
+    return parent
+end
+
 local function find_class_details(member_node, member_data)
     member_data.class_details = {}
     local end_row
     local class_node = member_node:parent():type() == 'template_declaration' and
                         member_node:parent():parent():parent() or member_node:parent():parent()
-    repeat
+    while class_node and class_node:type() == 'class_specifier' do
         local class_data = {}
         class_data.name = t2s(ts_utils.get_node_text(class_node:field('name')[1]))
 
@@ -209,10 +218,8 @@ local function find_class_details(member_node, member_data)
         _, _, end_row, _ = class_node:range()
         table.insert(member_data.class_details, class_data)
 
-        class_node = class_node:parent():type() == 'template_declaration' and
-                        class_node:parent():parent() or class_node:parent()
-    until class_node:type() ~= 'class_specifier'
-
+        class_node = get_nth_parent(class_node, 2)
+    end
     return end_row
 end
 
@@ -250,7 +257,6 @@ function M.imp_func(range_start, range_end)
 
             local classes_name
             local classes_template_statemets
-            print(vim.inspect(fun.class_details))
 
             for h = #fun.class_details, 1, -1 do
                 local templ_class_name = fun.class_details[h].name ..

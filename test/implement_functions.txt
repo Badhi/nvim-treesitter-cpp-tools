@@ -225,13 +225,95 @@ public:
     {
     public:
         void test();
-    }
+    };
 };
 -----------------------------
-void C::J:test()
+void C::J::test()
 {
 }
 ----------------------------
 7, 7
+
+
+============================================
+template_nested_class_tempalte_class
+============================================
+template<typename T>
+class C 
+{
+public:
+    template<typename K>
+    class J
+    {
+    public:
+        void test();
+    };
+};
+-----------------------------
+template <typename T> template <typename K>
+void C<T>::J<K>::test()
+{
+}
+----------------------------
+9, 9
+
+
+============================================
+template_nested_class_tempalte_class_template_fun
+============================================
+template<typename T>
+class C 
+{
+public:
+    template<typename K>
+    class J
+    {
+    public:
+        template<typename S>
+        void test(S s);
+    };
+};
+-----------------------------
+template <typename T> template <typename K> template <typename S>
+void C<T>::J<K>::test(S s)
+{
+}
+----------------------------
+10, 10
+
+
+============================================
+template_nested_class_tempalte_class_template_fun_with_normal
+============================================
+template<typename T>
+class C 
+{
+public:
+    template<typename K>
+    class J
+    {
+    public:
+        template<typename S>
+        void test(S s);
+        void test2();
+    };
+    void test4();
+};
+-----------------------------
+template <typename T> template <typename K> template <typename S>
+void C<T>::J<K>::test(S s)
+{
+}
+template <typename T> template <typename K>
+void C<T>::J<K>::test2()
+{
+}
+template <typename T>
+void C<T>::test4()
+{
+}
+
+----------------------------
+1, 14
 
 
