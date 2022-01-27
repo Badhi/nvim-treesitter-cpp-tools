@@ -39,7 +39,7 @@ nt_cpp_tools = {
 
 | Command      | Feature |
 | ----------- | ----------- |
-| `TSCppDefineClassFunc`      | Implement out of class member functions<br><br> *subset of functions can be implemented by selecting required function declarations using visual mode or simply keeping the cursor on the function declaration before calling the command*<br><br>Supported special features<br>1. Templates (with default args)<br>2. Function arguments with default values<br>3. Nested classes|
+| `TSCppDefineClassFunc`      | Implement out of class member functions<br><br> *subset of functions can be implemented by selecting required function declarations using visual mode or simply keeping the cursor on the function declaration before calling the command*<br><br>Supported special features<br>1. Templates (with default args)<br>2. Function arguments with default values<br>3. Nested classes<br>(check [test_cases](https://github.com/Badhi/nvim-treesitter-cpp-tools/blob/master/test/implement_functions.txt) for tested  examples)|
 | `TSCppMakeConcreteClass`   | Create a concrete class implementing all the pure virtual functions        |
 | `TSCppRuleOf3`   | Adds the missing function declarations to the class to obey the Rule of 3 (if eligible)        |
 | `TSCppRuleOf5`   | Adds the missing function declarations to the class to obey the Rule of 5 (if eligible)        |
