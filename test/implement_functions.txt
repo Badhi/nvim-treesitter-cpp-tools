@@ -196,3 +196,124 @@ const std::vector<int>& C<T,J>::j(K l, H f) const
 ----------------------------
 7,7
 
+============================================
+class_template_function_template_with_default_values
+============================================
+#include <vector>
+template<typename T, typename J = C>
+class C 
+{
+    public:
+    template<typename H, typename K = Z>
+    const std::vector<int>& j(K l, H f) const;
+};
+-----------------------------
+template <typename T, typename J> template <typename H, typename K>
+const std::vector<int>& C<T,J>::j(K l, H f) const
+{
+}
+----------------------------
+7,7
+
+============================================
+normal_nested_class
+============================================
+class C 
+{
+public:
+    class J
+    {
+    public:
+        void test();
+    };
+};
+-----------------------------
+void C::J::test()
+{
+}
+----------------------------
+7, 7
+
+
+============================================
+template_nested_class_tempalte_class
+============================================
+template<typename T>
+class C 
+{
+public:
+    template<typename K>
+    class J
+    {
+    public:
+        void test();
+    };
+};
+-----------------------------
+template <typename T> template <typename K>
+void C<T>::J<K>::test()
+{
+}
+----------------------------
+9, 9
+
+
+============================================
+template_nested_class_tempalte_class_template_fun
+============================================
+template<typename T>
+class C 
+{
+public:
+    template<typename K>
+    class J
+    {
+    public:
+        template<typename S>
+        void test(S s);
+    };
+};
+-----------------------------
+template <typename T> template <typename K> template <typename S>
+void C<T>::J<K>::test(S s)
+{
+}
+----------------------------
+10, 10
+
+
+============================================
+template_nested_class_tempalte_class_template_fun_with_normal
+============================================
+template<typename T>
+class C 
+{
+public:
+    template<typename K>
+    class J
+    {
+    public:
+        template<typename S>
+        void test(S s);
+        void test2();
+    };
+    void test4();
+};
+-----------------------------
+template <typename T> template <typename K> template <typename S>
+void C<T>::J<K>::test(S s)
+{
+}
+template <typename T> template <typename K>
+void C<T>::J<K>::test2()
+{
+}
+template <typename T>
+void C<T>::test4()
+{
+}
+
+----------------------------
+1, 14
+
+

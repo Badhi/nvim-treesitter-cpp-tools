@@ -1,5 +1,5 @@
 (class_specifier
-    name: (type_identifier) @class_name
+    name: (type_identifier)
     body: (field_declaration_list
        [(template_declaration
                 (declaration
@@ -14,4 +14,4 @@
         )
         ]@member_function
     )
-) @class
+)
