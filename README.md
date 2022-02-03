@@ -53,7 +53,7 @@ nt_cpp_tools = {
 
 2. `TSCppMakeConcreteClass`
 
-![TSImplementFunc](https://user-images.githubusercontent.com/10277051/152277772-6325d0b8-5ee1-47c3-ab6b-d8a5e10d34ac.gif)
+![TSConcreteClass](https://user-images.githubusercontent.com/10277051/152278222-d20e34f0-542d-451e-ae16-646f68e9f72f.gif)
 
 3. `TSCppRuleOf3`
 
