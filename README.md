@@ -49,12 +49,13 @@ nt_cpp_tools = {
 
 1. `TSCppDefineClassFunc`
 
-![TSCppDefineClassFunc](./docs/TSImplementFunc.gif)
+![TSImplementFunc](https://user-images.githubusercontent.com/10277051/152277748-d7c0204a-b54e-4ae1-90ac-b1e4cbd51ba5.gif)
 
 2. `TSCppMakeConcreteClass`
 
-![TSCppMakeConcreteClass](./docs/TSConcreteClass.gif)
+![TSImplementFunc](https://user-images.githubusercontent.com/10277051/152277772-6325d0b8-5ee1-47c3-ab6b-d8a5e10d34ac.gif)
 
 3. `TSCppRuleOf3`
 
-![TSCppRuleOf3](./docs/TSRuleOf3.gif)
+![TSRuleOf3](https://user-images.githubusercontent.com/10277051/152277800-a2573916-5e8a-4f3a-804f-88f6f6994281.gif)
+
