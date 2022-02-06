@@ -316,4 +316,51 @@ void C<T>::test4()
 ----------------------------
 1, 14
 
+============================================
+variable_with_functions
+============================================
+class C 
+{
+public:
+    void test();
+    int& test2();
+private:
+    int a;
+    int& b;
+};
+-----------------------------
+void C::test()
+{
+}
+int& C::test2()
+{
+}
+----------------------------
+1,9
+
+============================================
+variable_with_functions_templates
+============================================
+template<typename T>
+class C 
+{
+public:
+    void test();
+    int& test2();
+private:
+    int a;
+    T& b;
+};
+-----------------------------
+template <typename T>
+void C<T>::test()
+{
+}
+template <typename T>
+int& C<T>::test2()
+{
+}
+----------------------------
+1,10
+
 

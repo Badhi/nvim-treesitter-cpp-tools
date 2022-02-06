@@ -3,15 +3,18 @@
     body: (field_declaration_list
        [(template_declaration
                 (declaration
-                    [(function_declarator) (reference_declarator)]
-                )@member_function
+                    [(function_declarator) (reference_declarator 
+                                                (function_declarator))])@member_function
         )
         (field_declaration
-            [(function_declarator) (reference_declarator)]
+            [(function_declarator) (reference_declarator
+                                        (function_declarator))]
         ) 
         (declaration
-            [(function_declarator) (reference_declarator)]
+            [(function_declarator) (reference_declarator
+                                        (function_declarator))]
         )
         ]@member_function
     )
 )
+
