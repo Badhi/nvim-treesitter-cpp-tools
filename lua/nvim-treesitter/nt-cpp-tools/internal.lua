@@ -200,7 +200,8 @@ local function find_class_details(member_node, member_data)
     local end_row
     local class_node = member_node:parent():type() == 'template_declaration' and
                         member_node:parent():parent():parent() or member_node:parent():parent()
-    while class_node and class_node:type() == 'class_specifier' do
+    while class_node and
+        ( class_node:type() == 'class_specifier' or class_node:type() == 'struct_specifier') do
         local class_data = {}
         class_data.name = t2s(ts_utils.get_node_text(class_node:field('name')[1]))
 
