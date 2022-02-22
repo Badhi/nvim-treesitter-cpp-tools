@@ -1,4 +1,4 @@
-(class_specifier
+(_
     name: (type_identifier)
     body: (field_declaration_list
        [(template_declaration
@@ -17,4 +17,3 @@
         ]@member_function
     )
 )
-
