@@ -34,7 +34,7 @@ local function add_text_edit(text, start_row, start_col)
         },
         newText = text
     })
-    vim.lsp.util.apply_text_edits(edit, 0)
+    vim.lsp.util.apply_text_edits(edit, 0, 'utf-16')
 end
 
 local function t2s(txt)
