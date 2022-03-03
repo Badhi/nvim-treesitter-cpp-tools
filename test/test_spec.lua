@@ -1,5 +1,6 @@
 local mock = require('luassert.mock')
 local match = require 'luassert.match'
+local buf_writer = require 'nvim-treesitter.nt-cpp-tools.buffer_writer'
 
 local function lsp_txt(_, arguments, _)
     local expected = arguments[1]
@@ -84,7 +85,7 @@ describe("implement_functions", function()
     end
 
     local run_test = function (input, location, expected, test_name)
-        text_edit = mock(vim.lsp.util, true)
+        text_edit = mock(buf_writer, true)
         vim.api.nvim_command('normal ggdG')
         write(input)
         require'nvim-treesitter.nt-cpp-tools.internal'.imp_func(location[1], location[2])

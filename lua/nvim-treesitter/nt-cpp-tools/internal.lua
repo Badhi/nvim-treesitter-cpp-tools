@@ -2,6 +2,7 @@ local ts_utils = require("nvim-treesitter.ts_utils")
 local ts_query = require("nvim-treesitter.query")
 local parsers = require("nvim-treesitter.parsers")
 local previewer = require("nvim-treesitter.nt-cpp-tools.preview_printer")
+local buffer_writer = require("nvim-treesitter.nt-cpp-tools.buffer_writer")
 
 local M = {}
 
@@ -34,7 +35,7 @@ local function add_text_edit(text, start_row, start_col)
         },
         newText = text
     })
-    vim.lsp.util.apply_text_edits(edit, 0)
+    buffer_writer.apply_text_edits(edit, 0)
 end
 
 local function t2s(txt)
