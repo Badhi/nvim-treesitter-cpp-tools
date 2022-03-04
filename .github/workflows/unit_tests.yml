@@ -12,7 +12,8 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - 'master'
-  # Allows you to run this workflow manually from the Actions tab
+  schedule:
+    - cron: '0 9 * * *'
   workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
