@@ -1,0 +1,60 @@
+   
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - 'master'
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  unit_test:
+    strategy:
+      fail-fast: false
+      matrix:
+        nvim_version : [stable, nightly]
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      - name: Test Dependencies
+        run: |
+          mkdir -p ~/.local/share/nvim/site/pack/plenary.nvim/start
+          cd ~/.local/share/nvim/site/pack/plenary.nvim/start
+          git clone https://github.com/nvim-lua/plenary.nvim
+          mkdir -p ~/.local/share/nvim/site/pack/nvim-treesitter/start
+          cd ~/.local/share/nvim/site/pack/nvim-treesitter/start
+          git clone https://github.com/nvim-treesitter/nvim-treesitter.git
+         
+      - name: Setup nvim and tree sitter
+        env:
+          NVIM_TAG: ${{ matrix.nvim_version }}
+          TREE_SITTER_CLI_TAG: v0.20.4
+        run: |
+          wget -O - https://github.com/tree-sitter/tree-sitter/releases/download/${TREE_SITTER_CLI_TAG}/tree-sitter-linux-x64.gz | gunzip -c > tree-sitter
+          sudo cp ./tree-sitter /usr/bin/tree-sitter
+          sudo chmod uog+rwx /usr/bin/tree-sitter
+          wget https://github.com/neovim/neovim/releases/download/${NVIM_TAG}/nvim.appimage
+          chmod u+x nvim.appimage
+          mkdir -p ~/.local/share/nvim/site/pack/nvim-treesitter-cpp-tools/start
+          ln -s $(pwd) ~/.local/share/nvim/site/pack/nvim-treesitter-cpp-tools/start
+          sudo cp ./nvim.appimage /usr/bin/nvim
+          sudo chmod uog+rwx /usr/bin/nvim
+      - name: Install treesitter parsers
+        run: nvim --headless -c "TSInstallSync cpp" -c "q"
+
+      - name: Run Test
+        run: ./scripts/run_tests.sh
