@@ -363,4 +363,73 @@ int& C<T>::test2()
 ----------------------------
 1,10
 
+============================================
+pointer_return
+============================================
+class C 
+{
+public:
+    int* test2();
+};
+-----------------------------
+int* C::test2()
+{
+}
+----------------------------
+4,4
+
+
+============================================
+pointer_return_template_class
+============================================
+template<typename T>
+class C 
+{
+public:
+    int* test2();
+};
+-----------------------------
+template <typename T>
+int* C<T>::test2()
+{
+}
+----------------------------
+5,5
+
+
+============================================
+pointer_return_template_function
+============================================
+class C 
+{
+public:
+    template<typename T>
+    int* test2();
+};
+-----------------------------
+template <typename T>
+int* C::test2()
+{
+}
+----------------------------
+5,5
+
+
+============================================
+vector_pointer_return_template_function
+============================================
+#include <vector>
+class C 
+{
+public:
+    template<typename T>
+    std::vector<int>* test2();
+};
+-----------------------------
+template <typename T>
+std::vector<int>* C::test2()
+{
+}
+----------------------------
+6,6
 

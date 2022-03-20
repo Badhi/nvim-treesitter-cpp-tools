@@ -165,9 +165,11 @@ local function get_member_function_data(node)
         end
     end
 
-    if function_dec_node:type() == 'reference_declarator' then
+    if function_dec_node:type() == 'reference_declarator' or
+        function_dec_node:type() == 'pointer_declarator' then
+        result.ret_type = result.ret_type ..
+            (function_dec_node:type() == 'reference_declarator' and '&' or '*')
         function_dec_node = function_dec_node:named_child(0)
-        result.ret_type = result.ret_type .. '&'
     end
 
     result.fun_dec = t2s(ts_utils.get_node_text(function_dec_node:field('declarator')[1]))
