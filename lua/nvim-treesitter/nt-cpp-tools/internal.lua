@@ -349,6 +349,47 @@ function M.concrete_class_imp(range_start, range_end)
     previewer.start_preview(class, e_row + 1, on_preview_succces)
 end
 
+local function get_external_variales(local_variables, external_variables, value)
+    local dec_node = value:field('declarator')[1]
+
+    local assign_node = dec_node:field('declarator')[1]
+    table.insert(local_variables, ts_utils.node_to_text(assign_node))
+
+    local node = dec_node:field('value')[1]
+
+    if node:type() == 'binary_expression' then
+    elseif node:type() == 'call_exression' then
+    end
+end
+
+function M.refactor_to_function(range_start, range_end)
+    range_start = range_start - 1
+    range_end = range_end - 1
+
+    local external_variables = {}
+    local local_variables = {}
+    local query = ts_query.get_query('cpp', 'refactor')
+    local runner =  function(captures, matches)
+        for p, node in pairs(matches) do
+            local cap_str = captures[p]
+            local value = ''
+            for id, line in pairs(ts_utils.get_node_text(node)) do
+                value = (id == 1 and line or value .. '\n' .. line)
+            end
+
+            if cap_str == 'statement' then
+                get_external_variales(local_variables, external_variables, value)
+            end
+        end
+    end
+
+    if not run_on_nodes(query, runner, range_start, range_end) then
+        return
+    end
+
+    print(vim.inspect(external_variables))
+end
+
 function M.rule_of_5(limit_at_3, range_start, range_end)
     range_start = range_start - 1
     range_end = range_end - 1
@@ -514,6 +555,13 @@ M.commands = {
     },
     TSCppRuleOf5 = {
         run = function (s, e) M.rule_of_5(false, s, e) end,
+        f_args = "<line1>, <line2>",
+        args = {
+            "-range"
+        }
+    },
+    TSCppRefactorFun = {
+        run = M.refactor_to_function,
         f_args = "<line1>, <line2>",
         args = {
             "-range"
