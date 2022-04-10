@@ -351,6 +351,7 @@ end
 
 local function get_external_variales(local_variables, external_variables, value)
     local dec_node = value:field('declarator')[1]
+    print(dec_node:type())
 
     local assign_node = dec_node:field('declarator')[1]
     table.insert(local_variables, ts_utils.node_to_text(assign_node))
@@ -378,7 +379,7 @@ function M.refactor_to_function(range_start, range_end)
             end
 
             if cap_str == 'statement' then
-                get_external_variales(local_variables, external_variables, value)
+                get_external_variales(local_variables, external_variables, node)
             end
         end
     end
