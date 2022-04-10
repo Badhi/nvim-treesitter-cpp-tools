@@ -433,3 +433,36 @@ std::vector<int>* C::test2()
 ----------------------------
 6,6
 
+============================================
+noexcept_with_template
+============================================
+class C 
+{
+public:
+    template<typename T>
+    int* test2() noexcept;
+};
+-----------------------------
+template <typename T>
+int* C::test2() noexcept
+{
+}
+-----------------------------
+5,5
+
+============================================
+const_noexcept_with_template
+============================================
+class C 
+{
+public:
+    template<typename T>
+    int* test2() const noexcept;
+};
+-----------------------------
+template <typename T>
+int* C::test2() const noexcept
+{
+}
+-----------------------------
+5,5
