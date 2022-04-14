@@ -37,10 +37,11 @@ local function add_text_edit(text, start_row, start_col)
     vim.lsp.util.apply_text_edits(edit, 0)
 end
 
-local function t2s(txt)
+local function t2s(txt, add_empty_lines)
     local value
     for id, line in pairs(txt) do
-        if line ~= '' then
+        if add_empty_lines or line ~= '' then
+        --if line ~= '' then
             value = (id == 1 and line or value .. '\n' .. line)
         end
     end
@@ -349,47 +350,146 @@ function M.concrete_class_imp(range_start, range_end)
     previewer.start_preview(class, e_row + 1, on_preview_succces)
 end
 
-local function get_external_variales(local_variables, external_variables, value)
-    local dec_node = value:field('declarator')[1]
-    print(dec_node:type())
 
-    local assign_node = dec_node:field('declarator')[1]
-    table.insert(local_variables, ts_utils.node_to_text(assign_node))
+local function get_parameter_list(dependencies)
+    local parameter_list 
+    for _, d in pairs(dependencies) do
+        local parameter = t2s(ts_utils.get_node_text(d))
+        local n = d:parent()
+        while n do
+            if n:type() == 'init_declarator' then
+                -- initialization statement
+                -- taking the sibling of init_declarator -> type
+                parameter = t2s(ts_utils.get_node_text(n:parent():field('type')[1])) .. ' ' .. parameter
+                break
+            end
+            if n:type() == 'parameter_declaration' then
+                -- function argument
+                parameter = t2s(ts_utils.get_node_text(n:field('type')[1])) .. ' ' .. parameter
+                break
+            end
 
-    local node = dec_node:field('value')[1]
+            if n:type() == 'pointer_declarator' then
+                parameter = '*' .. parameter
+            elseif n:type() == 'reference_declarator' then
+                parameter = '&' .. parameter
+            end
 
-    if node:type() == 'binary_expression' then
-    elseif node:type() == 'call_exression' then
+            n = n:parent()
+        end
+        parameter_list = parameter_list and (parameter_list .. ', ' .. parameter) or parameter
     end
+    return parameter_list
 end
 
 function M.refactor_to_function(range_start, range_end)
     range_start = range_start - 1
     range_end = range_end - 1
 
-    local external_variables = {}
-    local local_variables = {}
+    local scope_identifiers = {}
+    local scope_init_identifiers = {}
+
     local query = ts_query.get_query('cpp', 'refactor')
-    local runner =  function(captures, matches)
+
+    local function_range_start_row
+
+    local scope_runner =  function(captures, matches)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
-            local value = ''
-            for id, line in pairs(ts_utils.get_node_text(node)) do
-                value = (id == 1 and line or value .. '\n' .. line)
+            -- local value = ''
+            -- for id, line in pairs(ts_utils.get_node_text(node)) do
+            --     value = (id == 1 and line or value .. '\n' .. line)
+            -- end
+
+            if not function_range_start_row then
+                local n = node
+                while n do
+                    n = n:parent()
+                    if n:type() == 'function_definition' then
+                        function_range_start_row, _, _, _ = n:range()
+                        break
+                    end
+                end
             end
 
-            if cap_str == 'statement' then
-                get_external_variales(local_variables, external_variables, node)
+            if cap_str == 'identifier' then
+                scope_identifiers[node] = true
+            elseif  cap_str == 'init_declare_identifier' then
+                scope_init_identifiers[node] = true
             end
         end
     end
 
-    if not run_on_nodes(query, runner, range_start, range_end) then
+    if not run_on_nodes(query, scope_runner, range_start, range_end) then
         return
     end
 
-    print(vim.inspect(external_variables))
+    if not function_range_start_row then
+        print('Cannot find the function scope range')
+        return
+    end
+
+    local all_init_identifiers = {}
+
+    local function_runner = function(captures, matches)
+        for p, node in pairs(matches) do
+            local cap_str = captures[p]
+            if cap_str == 'init_declare_identifier' then
+                all_init_identifiers[node] = true
+            end
+        end
+    end
+
+    if not run_on_nodes(query, function_runner, function_range_start_row, range_end) then
+        return
+    end
+
+    -- print('scope init identifiers : ')
+    -- for v, _ in pairs(scope_init_identifiers) do
+    --     print(t2s(ts_utils.get_node_text(v)))
+    -- end
+    -- print('scope identifiers : ')
+    -- for v, _ in pairs( scope_identifiers) do
+    --     print(t2s(ts_utils.get_node_text(v)))
+    -- end
+    -- print('all init : ')
+    -- for v, _ in pairs(all_init_identifiers) do
+    --     print(t2s(ts_utils.get_node_text(v)))
+    -- end
+
+    for s, _ in pairs(scope_init_identifiers) do
+        for v, _ in pairs(all_init_identifiers) do
+            if s == v then
+                all_init_identifiers[v] = nil
+            end
+        end
+    end
+
+    local required_external_dependencies = {}
+
+    for init, _ in pairs(all_init_identifiers) do
+        for id, _ in pairs(scope_identifiers) do
+            if t2s(ts_utils.get_node_text(id)) == t2s(ts_utils.get_node_text(init)) then
+                table.insert(required_external_dependencies, init)
+                break
+            end
+        end
+    end
+
+    print('External Depends:')
+    for _, v in pairs(required_external_dependencies) do
+        print(t2s(ts_utils.get_node_text(v)))
+    end
+
+    local function_name = vim.fn.input('Function Name: ', 'tempFunction')
+    local parameter_list = get_parameter_list(required_external_dependencies)
+
+    local output = 'void ' .. function_name .. '(' .. parameter_list .. ') {\n' ..
+                    t2s(vim.api.nvim_buf_get_lines(0, range_start, range_end, false), true) ..
+                    '\n}'
+    add_text_edit(output, function_range_start_row - 1, 0)
 end
+
 
 function M.rule_of_5(limit_at_3, range_start, range_end)
     range_start = range_start - 1
