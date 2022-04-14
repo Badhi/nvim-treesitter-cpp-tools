@@ -2,6 +2,7 @@ local ts_utils = require("nvim-treesitter.ts_utils")
 local ts_query = require("nvim-treesitter.query")
 local parsers = require("nvim-treesitter.parsers")
 local previewer = require("nvim-treesitter.nt-cpp-tools.preview_printer")
+local buffer_writer = require("nvim-treesitter.nt-cpp-tools.buffer_writer")
 
 local M = {}
 
@@ -34,7 +35,7 @@ local function add_text_edit(text, start_row, start_col)
         },
         newText = text
     })
-    vim.lsp.util.apply_text_edits(edit, 0)
+    buffer_writer.apply_text_edits(edit, 0)
 end
 
 local function t2s(txt, add_empty_lines)
@@ -165,9 +166,11 @@ local function get_member_function_data(node)
         end
     end
 
-    if function_dec_node:type() == 'reference_declarator' then
+    if function_dec_node:type() == 'reference_declarator' or
+        function_dec_node:type() == 'pointer_declarator' then
+        result.ret_type = result.ret_type ..
+            (function_dec_node:type() == 'reference_declarator' and '&' or '*')
         function_dec_node = function_dec_node:named_child(0)
-        result.ret_type = result.ret_type .. '&'
     end
 
     result.fun_dec = t2s(ts_utils.get_node_text(function_dec_node:field('declarator')[1]))
