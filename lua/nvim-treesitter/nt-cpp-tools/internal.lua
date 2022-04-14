@@ -352,7 +352,7 @@ end
 
 
 local function get_parameter_list(dependencies)
-    local parameter_list 
+    local parameter_list
     for _, d in pairs(dependencies) do
         local parameter = t2s(ts_utils.get_node_text(d))
         local n = d:parent()
@@ -363,7 +363,7 @@ local function get_parameter_list(dependencies)
                 parameter = t2s(ts_utils.get_node_text(n:parent():field('type')[1])) .. ' ' .. parameter
                 break
             end
-            if n:type() == 'parameter_declaration' then
+            if n:type() == 'parameter_declaration' or n:type() == 'declaration' then
                 -- function argument
                 parameter = t2s(ts_utils.get_node_text(n:field('type')[1])) .. ' ' .. parameter
                 break
@@ -476,17 +476,26 @@ function M.refactor_to_function(range_start, range_end)
         end
     end
 
-    print('External Depends:')
-    for _, v in pairs(required_external_dependencies) do
-        print(t2s(ts_utils.get_node_text(v)))
-    end
+    -- print('External Depends:')
+    -- for _, v in pairs(required_external_dependencies) do
+    --     print(t2s(ts_utils.get_node_text(v)))
+    -- end
 
     local function_name = vim.fn.input('Function Name: ', 'tempFunction')
     local parameter_list = get_parameter_list(required_external_dependencies)
 
+    local param_call_list
+    for _, p in pairs(required_external_dependencies) do
+        local txt = t2s(ts_utils.get_node_text(p))
+        param_call_list = param_call_list and param_call_list .. ', ' .. txt or txt
+    end
+
     local output = 'void ' .. function_name .. '(' .. parameter_list .. ') {\n' ..
                     t2s(vim.api.nvim_buf_get_lines(0, range_start, range_end, false), true) ..
                     '\n}'
+
+    vim.api.nvim_buf_set_lines(0, range_start, range_end, false, { function_name .. '(' .. param_call_list .. ');'})
+
     add_text_edit(output, function_range_start_row - 1, 0)
 end
 
