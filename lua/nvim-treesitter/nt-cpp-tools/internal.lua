@@ -354,10 +354,13 @@ function M.concrete_class_imp(range_start, range_end)
 end
 
 
-local function get_parameter_list(dependencies)
+local function get_parameter_list(dependencies, is_reference)
+    if not is_reference then is_reference = false end
+
     local parameter_list
-    for _, d in pairs(dependencies) do
+    for d, _ in pairs(dependencies) do
         local parameter = t2s(ts_utils.get_node_text(d))
+        if is_reference then parameter = '&' .. parameter end -- int* k -> int* & k
         local n = d:parent()
         while n do
             if n:type() == 'init_declarator' then
@@ -385,6 +388,37 @@ local function get_parameter_list(dependencies)
     return parameter_list
 end
 
+local function get_output_declarations(nodes)
+    local declarations = {}
+    for d, _ in pairs(nodes) do
+        local n = d:parent()
+
+        local is_init_declaration = false
+        local ref_pointers
+        while n do
+            if n:type() == 'declaration' then -- a declaration, not an assignment use as it is
+                if is_init_declaration then
+                    local type = t2s(ts_utils.get_node_text(n:field('type')[1]))
+                    local dec = ref_pointers and type .. ref_pointers or type -- type
+                    dec = dec .. ' ' .. t2s(ts_utils.get_node_text(d)) .. ';' -- variable name
+                    table.insert(declarations, dec)
+                else
+                    table.insert(declarations, t2s(ts_utils.get_node_text(n)))
+                end
+                break
+            elseif n:type() == 'pointer_declarator' then
+                ref_pointers = ref_pointers and '*' .. ref_pointers or '*'
+            elseif n:type() == 'reference_declarator' then
+                ref_pointers = ref_pointers and '&' .. ref_pointers or '&'
+            elseif n:type() == 'init_declarator' then
+                is_init_declaration = true
+            end
+            n = n:parent()
+        end
+    end
+    return declarations
+end
+
 function M.refactor_to_function(range_start, range_end)
     range_start = range_start - 1
     range_end = range_end - 1
@@ -394,7 +428,7 @@ function M.refactor_to_function(range_start, range_end)
 
     local query = ts_query.get_query('cpp', 'refactor')
 
-    local function_range_start_row
+    local function_start_row, function_end_row 
 
     local scope_runner =  function(captures, matches)
         for p, node in pairs(matches) do
@@ -404,12 +438,12 @@ function M.refactor_to_function(range_start, range_end)
             --     value = (id == 1 and line or value .. '\n' .. line)
             -- end
 
-            if not function_range_start_row then
+            if not function_start_row then
                 local n = node
                 while n do
                     n = n:parent()
                     if n:type() == 'function_definition' then
-                        function_range_start_row, _, _, _ = n:range()
+                        function_start_row, _, function_end_row, _ = n:range()
                         break
                     end
                 end
@@ -427,23 +461,29 @@ function M.refactor_to_function(range_start, range_end)
         return
     end
 
-    if not function_range_start_row then
+    if not function_start_row then
         print('Cannot find the function scope range')
         return
     end
 
     local all_init_identifiers = {}
+    local dependent_identifiers = {}
 
     local function_runner = function(captures, matches)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
             if cap_str == 'init_declare_identifier' then
                 all_init_identifiers[node] = true
+            elseif cap_str == 'identifier' then
+                local s_row, _, _, _ = node:range()
+                if s_row > range_end then
+                    dependent_identifiers[node] = true
+                end
             end
         end
     end
 
-    if not run_on_nodes(query, function_runner, function_range_start_row, range_end) then
+    if not run_on_nodes(query, function_runner, function_start_row, function_end_row) then
         return
     end
 
@@ -473,33 +513,53 @@ function M.refactor_to_function(range_start, range_end)
     for init, _ in pairs(all_init_identifiers) do
         for id, _ in pairs(scope_identifiers) do
             if t2s(ts_utils.get_node_text(id)) == t2s(ts_utils.get_node_text(init)) then
-                table.insert(required_external_dependencies, init)
+                required_external_dependencies[init] = true
                 break
             end
         end
     end
 
-    -- print('External Depends:')
-    -- for _, v in pairs(required_external_dependencies) do
+    local required_output_dependencies = {}
+    for s, _ in pairs(scope_init_identifiers) do
+        for o, _ in pairs(dependent_identifiers) do
+            if t2s(ts_utils.get_node_text(s)) == t2s(ts_utils.get_node_text(o)) then
+                required_output_dependencies[s] = true
+            end
+        end
+    end
+    -- print('Output Depends:')
+    -- for v, _ in pairs(required_output_dependencies) do
     --     print(t2s(ts_utils.get_node_text(v)))
     -- end
 
     local function_name = vim.fn.input('Function Name: ', 'tempFunction')
     local parameter_list = get_parameter_list(required_external_dependencies)
+    local dependent_list = get_parameter_list(required_output_dependencies, true)
+
+    if dependent_list then
+        parameter_list = parameter_list .. ', ' .. dependent_list
+    end
 
     local param_call_list
-    for _, p in pairs(required_external_dependencies) do
+    for p,_ in pairs(required_external_dependencies) do
+        local txt = t2s(ts_utils.get_node_text(p))
+        param_call_list = param_call_list and param_call_list .. ', ' .. txt or txt
+    end
+    for p,_ in pairs(required_output_dependencies) do
         local txt = t2s(ts_utils.get_node_text(p))
         param_call_list = param_call_list and param_call_list .. ', ' .. txt or txt
     end
 
-    local output = 'void ' .. function_name .. '(' .. parameter_list .. ') {\n' ..
+    local output_declarations = get_output_declarations(required_output_dependencies)
+
+    local fun_dec = 'void ' .. function_name .. '(' .. parameter_list .. ') {\n' ..
                     t2s(vim.api.nvim_buf_get_lines(0, range_start, range_end, false), true) ..
                     '\n}'
 
-    vim.api.nvim_buf_set_lines(0, range_start, range_end, false, { function_name .. '(' .. param_call_list .. ');'})
+    table.insert(output_declarations, function_name .. '(' .. param_call_list .. ');')
+    vim.api.nvim_buf_set_lines(0, range_start, range_end, false, output_declarations)
 
-    add_text_edit(output, function_range_start_row - 1, 0)
+    add_text_edit(fun_dec, function_start_row - 1, 0)
 end
 
 
