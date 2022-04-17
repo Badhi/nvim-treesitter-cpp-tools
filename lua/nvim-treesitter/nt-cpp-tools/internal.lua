@@ -419,6 +419,30 @@ local function get_output_declarations(nodes)
     return declarations
 end
 
+local function change_init_to_assign(init_statements)
+    local assign_statements = {}
+    for d, _ in pairs(init_statements) do
+        --local id_start_row, id_start_col, _, _ = d:range()
+        local n = d:parent()
+        while n and n:type() ~= 'init_declarator' do
+            if n:type() == 'declaration' then
+                -- reached beyond init_declarator which means its a declration
+                -- not an init
+                n = nil
+                table.insert(assign_statements, {original = d, transformed = nil})
+                break
+            end
+            n = n:parent()
+        end
+        if n then
+             local val = {original = d, transformed = ts_utils.get_node_text(n)}
+             val.transformed[#val.transformed] = val.transformed[#val.transformed] .. ';' -- init_declarator doesnt have semicolon at end
+             table.insert(assign_statements, val)
+        end
+    end
+    return assign_statements
+end
+
 function M.refactor_to_function(range_start, range_end)
     range_start = range_start - 1
     range_end = range_end - 1
@@ -552,8 +576,30 @@ function M.refactor_to_function(range_start, range_end)
 
     local output_declarations = get_output_declarations(required_output_dependencies)
 
+    local converted_assign_statments = change_init_to_assign(required_output_dependencies)
+    print(vim.inspect(converted_assign_statments))
+
+    local fun_body = vim.api.nvim_buf_get_lines(0, range_start, range_end, false)
+    for _, d in pairs(converted_assign_statments) do
+        local start_row, _, end_row, _ = d.original:range()
+        if not d.transformed then
+            -- a declaration which needs to be removed
+            -- since its declared in the parameters
+            for i = start_row, end_row do
+                fun_body[i - range_start + 1] = nil
+            end
+        else
+            local i = 0
+            for _, line in pairs(d.transformed) do
+                print(vim.inspect(line))
+                fun_body[start_row + i - range_start + 1] = line
+                i = i + 1
+            end
+        end
+    end
+
     local fun_dec = 'void ' .. function_name .. '(' .. parameter_list .. ') {\n' ..
-                    t2s(vim.api.nvim_buf_get_lines(0, range_start, range_end, false), true) ..
+                    t2s(fun_body, true) ..
                     '\n}'
 
     table.insert(output_declarations, function_name .. '(' .. param_call_list .. ');')
