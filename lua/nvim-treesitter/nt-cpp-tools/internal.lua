@@ -181,9 +181,8 @@ local function get_member_function_data(node)
     local fun_dec_child_count = function_dec_node:named_child_count()
     for c = 0, fun_dec_child_count - 1, 1 do
         local child = function_dec_node:named_child(c)
-        if child:type() == 'type_qualifier' then -- function constness
+        if child:type() == 'type_qualifier' or child:type() == 'noexcept' then -- function constness or noexcept
             result.fun_dec = result.fun_dec .. ' ' .. t2s(ts_utils.get_node_text(child))
-            break
         end
     end
     return result
