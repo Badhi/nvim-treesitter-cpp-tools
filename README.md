@@ -26,11 +26,17 @@ Append the following config to the nvim-treesitter config
 
 ```
 nt_cpp_tools = {
-      enable = true,
-      preview = {
-          quit = 'q', -- optional keymapping for quit preview
-          accept = '<tab>' -- optional keymapping for accept preview
-      },
+    enable = true,
+    preview = {
+        quit = 'q', -- optional keymapping for quit preview
+        accept = '<tab>' -- optional keymapping for accept preview
+    },
+    custom_impl_commands = {                                                             
+        TSCppImplWrite = {                                                               
+            output_cb = require'nvim-treesitter.nt-cpp-tools.output_handlers'.add_to_cpp 
+        }  
+        -- <custom_command> = { output_cb = <function (output_str, context)> }
+    }                                                                                    
 }
 ```
 
