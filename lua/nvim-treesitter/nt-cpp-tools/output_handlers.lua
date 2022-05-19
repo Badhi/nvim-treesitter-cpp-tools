@@ -5,7 +5,7 @@ local previewer = require("nvim-treesitter.nt-cpp-tools.preview_printer")
 local M = {}
 
 
-function M.preview_and_apply(output, context)
+local function preview_and_apply(output, context)
     local on_preview_succces = function (row)
         util.add_text_edit(output, row, 0)
     end
@@ -13,12 +13,26 @@ function M.preview_and_apply(output, context)
     previewer.start_preview(output, context.class_end_row + 1, on_preview_succces)
 end
 
-function M.add_to_cpp(output, _)
-    local nt_configs = configs.get_module "nt_cpp_tools"
-    local file_name = vim.fn.expand('%:p:h:t')
+function M.get_preview_and_apply(_)
+    return preview_and_apply
+end
+
+local source_extension = 'cpp'
+
+local function add_to_cpp(output, _)
+    local file_name = vim.fn.expand('%:r')
     vim.api.nvim_command('vsp ' .. file_name ..
-        nt_configs.source_file_extension)
+        '.' .. source_extension)
     util.add_text_edit(output, 1, 0)
+end
+
+function M.get_add_to_cpp(config)
+    if config then
+        if config.source_extension then
+            source_extension = config.source_extension
+        end
+    end
+    return add_to_cpp
 end
 
 return M
