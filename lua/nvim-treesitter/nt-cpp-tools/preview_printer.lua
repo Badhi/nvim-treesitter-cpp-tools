@@ -9,7 +9,7 @@ local result
 local on_accept_callbck
 
 local function remove_virt_text()
-    if mark_id then
+    if mark_id and vim.api.nvim_buf_is_valid(last_buffer) then
         vim.api.nvim_buf_del_extmark(last_buffer, ns_id, mark_id)
     end
 end
