@@ -466,3 +466,21 @@ int* C::test2() const noexcept
 }
 -----------------------------
 5,5
+
+============================================
+class_attr_const_noexcept_with_template
+============================================
+#define MYTAG
+class MYTAG C 
+{
+public:
+    template<typename T>
+    int* test2() const noexcept;
+};
+-----------------------------
+template <typename T>
+int* C::test2() const noexcept
+{
+}
+-----------------------------
+6,6

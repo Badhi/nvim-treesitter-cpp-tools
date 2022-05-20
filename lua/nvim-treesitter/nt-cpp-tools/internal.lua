@@ -205,9 +205,14 @@ local function find_class_details(member_node, member_data)
     while class_node and
         (class_node:type() == 'class_specifier' or
         class_node:type() == 'struct_specifier' or
+        class_node:type() == 'function_definition' or -- when classes get attributes
         class_node:type() == 'union_specifier' ) do
+
+
         local class_data = {}
-        class_data.name = t2s(ts_utils.get_node_text(class_node:field('name')[1]))
+
+        local class_name_node_field = class_node:type() == 'function_definition' and 'declarator' or 'name'
+        class_data.name = t2s(ts_utils.get_node_text(class_node:field(class_name_node_field)[1]))
 
         local template_statement, params = check_get_template_info(class_node)
         if template_statement then
