@@ -287,7 +287,7 @@ function M.imp_func(range_start, range_end, custom_cb)
         if custom_cb then
             custom_cb(output, context)
         else
-            output_handlers.preview_and_apply(output, context)
+            output_handlers.get_preview_and_apply()(output, context)
         end
     end
 
