@@ -1,6 +1,6 @@
 local configs = require "nvim-treesitter.configs"
 
-M = {}
+local M = {}
 
 local mark_id
 local last_buffer

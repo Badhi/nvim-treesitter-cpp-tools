@@ -2,7 +2,8 @@ local ts_utils = require("nvim-treesitter.ts_utils")
 local ts_query = require("nvim-treesitter.query")
 local parsers = require("nvim-treesitter.parsers")
 local previewer = require("nvim-treesitter.nt-cpp-tools.preview_printer")
-local buffer_writer = require("nvim-treesitter.nt-cpp-tools.buffer_writer")
+local output_handlers = require("nvim-treesitter.nt-cpp-tools.output_handlers")
+local util = require("nvim-treesitter.nt-cpp-tools.util")
 
 local M = {}
 
@@ -26,17 +27,6 @@ local function run_on_nodes(query, runner, sel_start_row, sel_end_row)
     return true
 end
 
-local function add_text_edit(text, start_row, start_col)
-    local edit = {}
-    table.insert(edit, {
-        range = {
-            start = { line = start_row, character = start_col},
-            ["end"] = { line = start_row, character = start_col}
-        },
-        newText = text
-    })
-    buffer_writer.apply_text_edits(edit, 0)
-end
 
 local function t2s(txt)
     local value
@@ -228,7 +218,7 @@ local function find_class_details(member_node, member_data)
     return end_row
 end
 
-function M.imp_func(range_start, range_end)
+function M.imp_func(range_start, range_end, custom_cb)
     range_start = range_start - 1
     range_end = range_end - 1
 
@@ -293,11 +283,12 @@ function M.imp_func(range_start, range_end)
     end
 
     if output ~= '' then
-        local on_preview_succces = function (row)
-            add_text_edit(output, row, 0)
+        local context = {class_end_row = e_row}
+        if custom_cb then
+            custom_cb(output, context)
+        else
+            output_handlers.get_preview_and_apply()(output, context)
         end
-
-        previewer.start_preview(output, e_row + 1, on_preview_succces)
     end
 
 end
@@ -344,11 +335,7 @@ function M.concrete_class_imp(range_start, range_end)
     end
     class = class .. '};'
 
-    local on_preview_succces = function (row)
-        add_text_edit(class, row, 0)
-    end
-
-    previewer.start_preview(class, e_row + 1, on_preview_succces)
+    output_handlers.preview_and_apply(class, {class_end_row = e_row})
 end
 
 function M.rule_of_5(limit_at_3, range_start, range_end)
