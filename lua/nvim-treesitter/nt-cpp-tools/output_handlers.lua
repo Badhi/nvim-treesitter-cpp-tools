@@ -17,21 +17,15 @@ function M.get_preview_and_apply(_)
     return preview_and_apply
 end
 
-local source_extension = 'cpp'
-
 local function add_to_cpp(output, _)
+    local config = configs.get_module "nt_cpp_tools"
     local file_name = vim.fn.expand('%:r')
     vim.api.nvim_command('vsp ' .. file_name ..
-        '.' .. source_extension)
+        '.' .. config.source_extension)
     util.add_text_edit(output, 1, 0)
 end
 
-function M.get_add_to_cpp(config)
-    if config then
-        if config.source_extension then
-            source_extension = config.source_extension
-        end
-    end
+function M.get_add_to_cpp(_)
     return add_to_cpp
 end
 

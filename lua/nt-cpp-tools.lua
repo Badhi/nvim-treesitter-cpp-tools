@@ -38,15 +38,17 @@ function M.init()
     vim.cmd([[ hi def TSCppHighlight guifg=#808080 ctermfg=244 ]])
     require "nvim-treesitter".define_modules {
         nt_cpp_tools = {
-          module_path = "nvim-treesitter.nt-cpp-tools.internal",
-          enable = false,
-          preview = {
-              quit = 'q',
-              accept = '<tab>'
-          },
-          is_supported = function(lang)
-            return queries.get_query(lang, 'query') ~= nil
-          end
+            module_path = "nvim-treesitter.nt-cpp-tools.internal",
+            enable = false,
+            preview = {
+                quit = 'q',
+                accept = '<tab>'
+            },
+            header_extension = 'h',
+            source_extension = 'cpp',
+            is_supported = function(lang)
+                return queries.get_query(lang, 'query') ~= nil
+            end
         }
     }
 
