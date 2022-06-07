@@ -1,5 +1,5 @@
 # nt-cpp-tools
-[![](http://github-actions.40ants.com/Badhi/nvim-treesitter-cpp-tools/matrix.svg)](https://github.com/Badhi/nvim-treesitter-cpp-tools)
+![Unit Tests](https://github.com/badhi/nvim-treesitter-cpp-tools/actions/workflows/unit_tests.yml/badge.svg)
 
 Experimental treesitter based neovim plugin to create intelligent implementations for C++
 
