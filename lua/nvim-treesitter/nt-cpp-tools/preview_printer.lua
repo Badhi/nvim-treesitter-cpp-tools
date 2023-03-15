@@ -1,4 +1,4 @@
-local configs = require "nvim-treesitter.configs"
+local configs = require "nvim-treesitter.nt-cpp-tools.config"
 
 local M = {}
 
@@ -40,7 +40,7 @@ end
 
 
 local function end_preview()
-    local config = configs.get_module "nt_cpp_tools"
+    local config = configs.get_cfg()
     vim.api.nvim_del_keymap('n', config.preview.quit)
     vim.api.nvim_del_keymap('n', config.preview.accept)
     remove_virt_text()
@@ -66,7 +66,7 @@ function M.start_preview(txt, insert_row, on_accept_cb)
     on_accept_callbck = on_accept_cb
     local keymap_config = { silent = true, noremap = true }
 
-    local config = configs.get_module "nt_cpp_tools"
+    local config = configs.get_cfg()
 
     vim.api.nvim_set_keymap('n', config.preview.quit,
         ":lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.flush_and_end_preview()<CR>",

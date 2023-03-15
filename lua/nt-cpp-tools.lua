@@ -1,7 +1,6 @@
-local queries = require "nvim-treesitter.query"
-local configs = require "nvim-treesitter.configs"
-
 local M = {}
+
+local init_done = false
 
 --TODO reuse the function provided by the treesitter utils
 local function setup_commands(commands)
@@ -34,25 +33,16 @@ local function get_copy(table)
     return ret
 end
 
-function M.init()
-    vim.cmd([[ hi def TSCppHighlight guifg=#808080 ctermfg=244 ]])
-    require "nvim-treesitter".define_modules {
-        nt_cpp_tools = {
-            module_path = "nvim-treesitter.nt-cpp-tools.internal",
-            enable = false,
-            preview = {
-                quit = 'q',
-                accept = '<tab>'
-            },
-            header_extension = 'h',
-            source_extension = 'cpp',
-            is_supported = function(lang)
-                return queries.get_query(lang, 'query') ~= nil
-            end
-        }
-    }
+function M.setup(user_config)
+    if init_done then
+        return
+    end
+    init_done = true
 
-    local config = configs.get_module "nt_cpp_tools"
+
+    vim.cmd([[ hi def TSCppHighlight guifg=#808080 ctermfg=244 ]])
+
+    local config = require 'nvim-treesitter.nt-cpp-tools.config'.init(user_config)
     if config.custom_define_class_function_commands then
         local internal = require"nvim-treesitter.nt-cpp-tools.internal"
         local default_command = internal.commands.TSCppDefineClassFunc
