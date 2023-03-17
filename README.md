@@ -35,7 +35,7 @@ use {
 Add the following config to your init script
 
 ```lua
-require('nvim-treesitter.nt-cpp-tools.config').setup({
+require('nt-cpp-tools.config').setup({
       enable = true,
       preview = {
           quit = 'q', -- optional keymapping for quit preview

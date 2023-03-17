@@ -7,7 +7,7 @@ local function setup_commands(commands)
     for command_name, def in pairs(commands) do
         local f_args = def.f_args or "<f-args>"
         local call_fn = string.format(
-        "lua require'nvim-treesitter.nt-cpp-tools.internal'.commands.%s['run<bang>'](%s)",
+        "lua require'nt-cpp-tools.internal'.commands.%s['run<bang>'](%s)",
         command_name,
         f_args
         )
@@ -42,9 +42,9 @@ function M.setup(user_config)
 
     vim.cmd([[ hi def TSCppHighlight guifg=#808080 ctermfg=244 ]])
 
-    local config = require 'nvim-treesitter.nt-cpp-tools.config'.init(user_config)
+    local config = require 'nt-cpp-tools.config'.init(user_config)
     if config.custom_define_class_function_commands then
-        local internal = require"nvim-treesitter.nt-cpp-tools.internal"
+        local internal = require"nt-cpp-tools.internal"
         local default_command = internal.commands.TSCppDefineClassFunc
         for command_name, command in pairs(config.custom_define_class_function_commands) do
             local value = get_copy(default_command)
@@ -52,7 +52,7 @@ function M.setup(user_config)
             internal.commands[command_name] = value
         end
     end
-    setup_commands(require"nvim-treesitter.nt-cpp-tools.internal".commands)
+    setup_commands(require"nt-cpp-tools.internal".commands)
 end
 
 

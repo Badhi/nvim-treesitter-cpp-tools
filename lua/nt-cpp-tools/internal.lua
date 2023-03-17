@@ -1,9 +1,9 @@
 local ts_utils = require("nvim-treesitter.ts_utils")
 local ts_query = require("nvim-treesitter.query")
 local parsers = require("nvim-treesitter.parsers")
-local previewer = require("nvim-treesitter.nt-cpp-tools.preview_printer")
-local output_handlers = require("nvim-treesitter.nt-cpp-tools.output_handlers")
-local util = require("nvim-treesitter.nt-cpp-tools.util")
+local previewer = require("nt-cpp-tools.preview_printer")
+local output_handlers = require("nt-cpp-tools.output_handlers")
+local util = require("nt-cpp-tools.util")
 
 local M = {}
 
