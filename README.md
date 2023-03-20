@@ -34,6 +34,8 @@ use {
 
 Add the following config to your init script
 
+==Note : The config for this plugin, included in the `treesitter.config` is now moved to an independent config. Please make required changes==
+
 ```lua
 require('nt-cpp-tools.config').setup({
       enable = true,
