@@ -38,7 +38,6 @@ Add the following config to your init script
 
 ```lua
 require('nt-cpp-tools.config').setup({
-      enable = true,
       preview = {
           quit = 'q', -- optional keymapping for quit preview
           accept = '<tab>' -- optional keymapping for accept preview
