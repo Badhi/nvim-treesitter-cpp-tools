@@ -1,4 +1,4 @@
-local buffer_writer = require("nvim-treesitter.nt-cpp-tools.buffer_writer")
+local buffer_writer = require("nt-cpp-tools.buffer_writer")
 
 local M = {}
 function M.add_text_edit(text, start_row, start_col)

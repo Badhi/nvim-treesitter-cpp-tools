@@ -1,14 +1,13 @@
-local queries = require "nvim-treesitter.query"
-local configs = require "nvim-treesitter.configs"
-
 local M = {}
+
+local init_done = false
 
 --TODO reuse the function provided by the treesitter utils
 local function setup_commands(commands)
     for command_name, def in pairs(commands) do
         local f_args = def.f_args or "<f-args>"
         local call_fn = string.format(
-        "lua require'nvim-treesitter.nt-cpp-tools.internal'.commands.%s['run<bang>'](%s)",
+        "lua require'nt-cpp-tools.internal'.commands.%s['run<bang>'](%s)",
         command_name,
         f_args
         )
@@ -34,27 +33,18 @@ local function get_copy(table)
     return ret
 end
 
-function M.init()
-    vim.cmd([[ hi def TSCppHighlight guifg=#808080 ctermfg=244 ]])
-    require "nvim-treesitter".define_modules {
-        nt_cpp_tools = {
-            module_path = "nvim-treesitter.nt-cpp-tools.internal",
-            enable = false,
-            preview = {
-                quit = 'q',
-                accept = '<tab>'
-            },
-            header_extension = 'h',
-            source_extension = 'cpp',
-            is_supported = function(lang)
-                return queries.get_query(lang, 'query') ~= nil
-            end
-        }
-    }
+function M.setup(user_config)
+    if init_done then
+        return
+    end
+    init_done = true
 
-    local config = configs.get_module "nt_cpp_tools"
+
+    vim.cmd([[ hi def TSCppHighlight guifg=#808080 ctermfg=244 ]])
+
+    local config = require 'nt-cpp-tools.config'.init(user_config)
     if config.custom_define_class_function_commands then
-        local internal = require"nvim-treesitter.nt-cpp-tools.internal"
+        local internal = require"nt-cpp-tools.internal"
         local default_command = internal.commands.TSCppDefineClassFunc
         for command_name, command in pairs(config.custom_define_class_function_commands) do
             local value = get_copy(default_command)
@@ -62,7 +52,7 @@ function M.init()
             internal.commands[command_name] = value
         end
     end
-    setup_commands(require"nvim-treesitter.nt-cpp-tools.internal".commands)
+    setup_commands(require"nt-cpp-tools.internal".commands)
 end
 
 

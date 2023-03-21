@@ -1,6 +1,6 @@
-local util = require("nvim-treesitter.nt-cpp-tools.util")
+local util = require("nt-cpp-tools.util")
 local configs = require("nvim-treesitter.configs")
-local previewer = require("nvim-treesitter.nt-cpp-tools.preview_printer")
+local previewer = require("nt-cpp-tools.preview_printer")
 
 local M = {}
 

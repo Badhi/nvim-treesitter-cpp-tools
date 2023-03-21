@@ -1,4 +1,4 @@
-local configs = require "nvim-treesitter.configs"
+local configs = require "nt-cpp-tools.config"
 
 local M = {}
 
@@ -40,7 +40,7 @@ end
 
 
 local function end_preview()
-    local config = configs.get_module "nt_cpp_tools"
+    local config = configs.get_cfg()
     vim.api.nvim_del_keymap('n', config.preview.quit)
     vim.api.nvim_del_keymap('n', config.preview.accept)
     remove_virt_text()
@@ -66,13 +66,13 @@ function M.start_preview(txt, insert_row, on_accept_cb)
     on_accept_callbck = on_accept_cb
     local keymap_config = { silent = true, noremap = true }
 
-    local config = configs.get_module "nt_cpp_tools"
+    local config = configs.get_cfg()
 
     vim.api.nvim_set_keymap('n', config.preview.quit,
-        ":lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.flush_and_end_preview()<CR>",
+        ":lua require'nt-cpp-tools.preview_printer'.flush_and_end_preview()<CR>",
         keymap_config)
     vim.api.nvim_set_keymap('n', config.preview.accept,
-        ":lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.accept_and_end_preview()<CR>",
+        ":lua require'nt-cpp-tools.preview_printer'.accept_and_end_preview()<CR>",
         keymap_config)
 
     draw_virtual_text(txt, vim.api.nvim_win_get_cursor(0)[1])
@@ -80,7 +80,7 @@ function M.start_preview(txt, insert_row, on_accept_cb)
     vim.cmd(
     [[
     augroup TSCppTools
-    autocmd! CursorMoved * lua require'nvim-treesitter.nt-cpp-tools.preview_printer'.on_cursor_moved()
+    autocmd! CursorMoved * lua require'nt-cpp-tools.preview_printer'.on_cursor_moved()
     augroup END
     ]]
     )

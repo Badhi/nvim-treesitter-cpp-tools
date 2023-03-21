@@ -1,1 +1,1 @@
-lua require("nt-cpp-tools").init()
+lua require("nt-cpp-tools")
