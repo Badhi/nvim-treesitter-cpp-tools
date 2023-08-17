@@ -335,7 +335,7 @@ function M.concrete_class_imp(range_start, range_end)
     end
     class = class .. '};'
 
-    output_handlers.preview_and_apply(class, {class_end_row = e_row})
+    output_handlers.get_preview_and_apply()(class, {class_end_row = e_row})
 end
 
 function M.rule_of_5(limit_at_3, range_start, range_end)
