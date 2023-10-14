@@ -30,6 +30,15 @@ use {
 }
 ```
 
+Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+```lua
+{
+    "Badhi/nvim-tree-sitter-cpp-tools",
+    dependencies = { "nvim-treesitter/nvim-treesitter" },
+    config = true
+}
+```
+
 ## Setup
 
 Add the following config to your init script
