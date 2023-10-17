@@ -8,6 +8,10 @@ local util = require("nt-cpp-tools.util")
 local M = {}
 
 local function get_node_text(node)
+    if not node then
+        return {}
+    end
+
     local txtStr = vim.treesitter.get_node_text(node, 0)
     local txt = {}
 
