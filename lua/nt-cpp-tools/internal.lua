@@ -7,6 +7,20 @@ local util = require("nt-cpp-tools.util")
 
 local M = {}
 
+local function get_node_text(node)
+    if not node then
+        return {}
+    end
+
+    local txtStr = vim.treesitter.get_node_text(node, 0)
+    local txt = {}
+
+    for str in string.gmatch(txtStr, "([^\n]+)") do
+      table.insert(txt, str)
+    end
+    return txt
+end
+
 local function run_on_nodes(query, runner, sel_start_row, sel_end_row)
     local bufnr = 0
     local ft = vim.api.nvim_buf_get_option(bufnr, 'ft')
@@ -65,7 +79,7 @@ local function remove_entries_and_get_node_string(node, entries)
     -- considering a row so that changing the statement will not
     -- mess up the indexes of the entries
     local base_row_offset, base_col_offset, _, _ = node:range()
-    local txt = ts_utils.get_node_text(node)
+    local txt = get_node_text(node)
     for _, entry in pairs(entries) do
         entry.start_row = entry.start_row - base_row_offset + 1
         entry.end_row = entry.end_row - base_row_offset + 1
@@ -109,11 +123,11 @@ local function check_get_template_info(node)
         local param_node = template_param_list:named_child(param_id)
         if param_node:type() == 'type_parameter_declaration' then
             table.insert(typename_names,
-                    t2s(ts_utils.get_node_text(param_node:named_child(0))))
+                    t2s(get_node_text(param_node:named_child(0))))
         elseif param_node:type() == 'optional_type_parameter_declaration' then
             local type_identifier = param_node:field('name')[1]
             table.insert(typename_names,
-                    t2s(ts_utils.get_node_text(type_identifier)))
+                    t2s(get_node_text(type_identifier)))
             local _, _, start_row, start_col = type_identifier:range()
             local _, _, end_row, end_col = param_node:field('default_type')[1]:range()
             table.insert(remove_entries,
@@ -145,12 +159,12 @@ local function get_member_function_data(node)
         return nil
     end
 
-    result.ret_type = t2s(ts_utils.get_node_text(return_node)) -- return tye
+    result.ret_type = t2s(get_node_text(return_node)) -- return tye
     local node_child_count = node:named_child_count()
     for c = 0, node_child_count - 1, 1 do
         local child = node:named_child(c)
         if child:type() == 'type_qualifier' then -- return constness
-            result.ret_type = t2s(ts_utils.get_node_text(child)) .. ' ' .. result.ret_type
+            result.ret_type = t2s(get_node_text(child)) .. ' ' .. result.ret_type
             break
         end
     end
@@ -162,7 +176,7 @@ local function get_member_function_data(node)
         function_dec_node = function_dec_node:named_child(0)
     end
 
-    result.fun_dec = t2s(ts_utils.get_node_text(function_dec_node:field('declarator')[1]))
+    result.fun_dec = t2s(get_node_text(function_dec_node:field('declarator')[1]))
 
     local fun_params = function_dec_node:field('parameters')[1]
     result.fun_dec = result.fun_dec .. t2s(remove_entries_and_get_node_string(fun_params,
@@ -172,7 +186,7 @@ local function get_member_function_data(node)
     for c = 0, fun_dec_child_count - 1, 1 do
         local child = function_dec_node:named_child(c)
         if child:type() == 'type_qualifier' or child:type() == 'noexcept' then -- function constness or noexcept
-            result.fun_dec = result.fun_dec .. ' ' .. t2s(ts_utils.get_node_text(child))
+            result.fun_dec = result.fun_dec .. ' ' .. t2s(get_node_text(child))
         end
     end
     return result
@@ -197,7 +211,7 @@ local function find_class_details(member_node, member_data)
         class_node:type() == 'struct_specifier' or
         class_node:type() == 'union_specifier' ) do
         local class_data = {}
-        class_data.name = t2s(ts_utils.get_node_text(class_node:field('name')[1]))
+        class_data.name = t2s(get_node_text(class_node:field('name')[1]))
 
         local template_statement, params = check_get_template_info(class_node)
         if template_statement then
@@ -305,7 +319,7 @@ function M.concrete_class_imp(range_start, range_end)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
             local value = ''
-            for id, line in pairs(ts_utils.get_node_text(node)) do
+            for id, line in pairs(get_node_text(node)) do
                 value = (id == 1 and line or value .. '\n' .. line)
             end
 
@@ -365,7 +379,7 @@ function M.rule_of_5(limit_at_3, range_start, range_end)
         for p, node in pairs(matches) do
             local cap_str = captures[p]
             local value = ''
-            for id, line in pairs(ts_utils.get_node_text(node)) do
+            for id, line in pairs(get_node_text(node)) do
                 value = (id == 1 and line or value .. '\n' .. line)
             end
             local start_row, start_col, _, _ = node:range()
