@@ -7,16 +7,18 @@ local util = require("nt-cpp-tools.util")
 
 local M = {}
 
-local function get_node_text(node)
+local function get_node_text(node, bufnr)
     if not node then
         return {}
     end
 
-    local txtStr = vim.treesitter.get_node_text(node, 0)
+    bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+    local txtStr = vim.treesitter.get_node_text(node, bufnr)
     local txt = {}
 
     for str in string.gmatch(txtStr, "([^\n]+)") do
-      table.insert(txt, str)
+        table.insert(txt, str)
     end
     return txt
 end
