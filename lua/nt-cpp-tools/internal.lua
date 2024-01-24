@@ -475,13 +475,13 @@ function M.rule_of_5(limit_at_3, range_start, range_end)
     if not limit_at_3 then
         if not checkers.move_assignment then
             util.add_text_edit(newLine, entry_location.start_row, 0)
-            local txt = class_name .. '& operator=(' .. class_name .. '&&);'
+            local txt = class_name .. '& operator=(' .. class_name .. '&&) noexcept;'
             add_txt_below_existing_def(txt)
         end
 
         if not checkers.move_constructor then
             util.add_text_edit(newLine, entry_location.start_row, 0)
-            local txt = class_name .. '(const ' .. class_name .. '&&);'
+            local txt = class_name .. '(const ' .. class_name .. '&&) noexcept;'
             add_txt_below_existing_def(txt)
         end
     end
