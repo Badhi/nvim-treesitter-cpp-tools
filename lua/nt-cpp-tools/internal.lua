@@ -207,17 +207,21 @@ local function find_class_details(member_node, member_data)
     member_data.class_details = {}
     local end_row
 
+    if member_node:parent():type() == 'template_declaration'  then
+      member_node = member_node:parent()
+    end
+    -- print(member_node:parent():type())
+
     -- If global function, member node is the highest, no class data available
     -- but function requires the scope end row to return
-    if member_node:parent():type() == 'translation_unit'  then --TODO namespaces
+    if member_node:parent():type() == 'translation_unit' then --TODO namespaces
       _, _, end_row, _ = member_node:range()
       return end_row
     end
 
-    print(member_node:parent():type())
-    print(member_node:parent():parent():parent():type())
-    local class_node = member_node:parent():type() == 'template_declaration' and
-                        member_node:parent():parent():parent() or member_node:parent():parent()
+    -- the function could be a template, therefore going an extra parent higher
+    local class_node = member_node:parent():parent()
+
     while class_node and
         (class_node:type() == 'class_specifier' or
         class_node:type() == 'struct_specifier' or
