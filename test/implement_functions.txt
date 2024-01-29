@@ -466,3 +466,70 @@ int* C::test2() const noexcept
 }
 -----------------------------
 5,5
+
+============================================
+simple_global_functions
+============================================
+void test();
+-----------------------------
+void test()
+{
+}
+-----------------------------
+1,1
+============================================
+global_functions_with_args
+============================================
+void test(int a, int b, std::vector<int> d);
+-----------------------------
+void test(int a, int b, std::vector<int> d)
+{
+}
+-----------------------------
+1,1
+============================================
+global_functions_with_args_with_return
+============================================
+std::map<int, std::string> test(int a, int b, std::vector<int> d);
+-----------------------------
+std::map<int, std::string> test(int a, int b, std::vector<int> d)
+{
+}
+-----------------------------
+1,1
+============================================
+template_global_functions_with_args
+============================================
+template<typename T>
+void test(int a, int b, std::vector<int> d);
+-----------------------------
+template <typename T>
+void test(int a, int b, std::vector<int> d)
+{
+}
+-----------------------------
+1,2
+============================================
+template_global_functions_with_args_with_return
+============================================
+template<typename T>
+std::map<int, std::string> test(int a, int b, std::vector<int> d);
+-----------------------------
+template <typename T>
+std::map<int, std::string> test(int a, int b, std::vector<int> d)
+{
+}
+-----------------------------
+1,2
+============================================
+template_global_functions
+============================================
+template<typename T>
+void test();
+-----------------------------
+template <typename T>
+void test()
+{
+}
+-----------------------------
+1,2

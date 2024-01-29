@@ -30,7 +30,7 @@ local function run_on_nodes(query, runner, sel_start_row, sel_end_row)
     local parser = parsers.get_parser(bufnr, ft)
     local root = parser:parse()[1]:root()
 
-    local matches = query:iter_matches(root, bufnr, sel_start_row, sel_end_row)
+    local matches = query:iter_matches(root, bufnr, sel_start_row, sel_end_row + 1)
 
     while true do
         local pattern, match = matches()
@@ -206,8 +206,22 @@ end
 local function find_class_details(member_node, member_data)
     member_data.class_details = {}
     local end_row
-    local class_node = member_node:parent():type() == 'template_declaration' and
-                        member_node:parent():parent():parent() or member_node:parent():parent()
+
+    if member_node:parent():type() == 'template_declaration'  then
+      member_node = member_node:parent()
+    end
+    -- print(member_node:parent():type())
+
+    -- If global function, member node is the highest, no class data available
+    -- but function requires the scope end row to return
+    if member_node:parent():type() == 'translation_unit' then --TODO namespaces
+      _, _, end_row, _ = member_node:range()
+      return end_row
+    end
+
+    -- the function could be a template, therefore going an extra parent higher
+    local class_node = member_node:parent():parent()
+
     while class_node and
         (class_node:type() == 'class_specifier' or
         class_node:type() == 'struct_specifier' or
@@ -269,18 +283,19 @@ function M.imp_func(range_start, range_end, custom_cb)
             local classes_name
             local classes_template_statemets
 
-            for h = #fun.class_details, 1, -1 do
-                local templ_class_name = fun.class_details[h].name ..
-                            (fun.class_details[h].class_template_params or '') .. '::'
-                classes_name = (h == #fun.class_details) and templ_class_name or classes_name .. templ_class_name
-                if not classes_template_statemets then
-                    classes_template_statemets = fun.class_details[h].class_template_statement
-                else
-                    classes_template_statemets = classes_template_statemets .. ' '
-                                            .. fun.class_details[h].class_template_statement
-                end
+            if fun.class_details then
+              for h = #fun.class_details, 1, -1 do
+                  local templ_class_name = fun.class_details[h].name ..
+                              (fun.class_details[h].class_template_params or '') .. '::'
+                  classes_name = (h == #fun.class_details) and templ_class_name or classes_name .. templ_class_name
+                  if not classes_template_statemets then
+                      classes_template_statemets = fun.class_details[h].class_template_statement
+                  else
+                      classes_template_statemets = classes_template_statemets .. ' '
+                                              .. fun.class_details[h].class_template_statement
+                  end
+              end
             end
-
 
             local template_statements
             if classes_template_statemets and fun.template then
@@ -293,7 +308,7 @@ function M.imp_func(range_start, range_end, custom_cb)
 
             output = output .. (template_statements and template_statements .. '\n' or '') ..
                                 (fun.ret_type and fun.ret_type .. ' ' or '' ) ..
-                                classes_name
+                                (classes_name and classes_name or '')
                                 .. fun.fun_dec .. '\n{\n}\n'
         end
     end
