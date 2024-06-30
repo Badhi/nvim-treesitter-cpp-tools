@@ -214,7 +214,10 @@ local function find_class_details(member_node, member_data)
 
     -- If global function, member node is the highest, no class data available
     -- but function requires the scope end row to return
-    if member_node:parent():type() == 'translation_unit' then --TODO namespaces
+    if member_node:parent():type() == 'translation_unit' or
+      member_node:parent():type() == 'preproc_ifdef' or
+      ( member_node:parent():parent() ~= nil and
+        member_node:parent():parent():type() == 'namespace_definition') then
       _, _, end_row, _ = member_node:range()
       return end_row
     end
