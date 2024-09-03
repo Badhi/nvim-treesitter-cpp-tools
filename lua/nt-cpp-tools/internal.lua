@@ -37,7 +37,13 @@ local function run_on_nodes(query, runner, sel_start_row, sel_end_row)
         if pattern == nil then
             break
         end
-        runner(query.captures, match)
+        if type(match[1][1]) == 'userdata' then -- fix for 6913c5e1 in nvim  
+          for _, m in pairs(match) do
+            runner(query.captures, m)
+          end
+        else
+          runner(query.captures, match)
+        end
     end
 
     return true
