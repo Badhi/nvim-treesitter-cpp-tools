@@ -326,14 +326,38 @@ public:
     class J
     {
     public:
-        void J(S s);
+        void J(T s);
         void test2();
     };
     void test4();
 };
 -----------------------------
 template <typename T>
-void C<T>::J::J(S s)
+void C<T>::J::J(T s)
+{
+}
+
+----------------------------
+8,8 
+
+============================================
+nested_template_class_class_with_constructor
+============================================
+class C 
+{
+public:
+    template<typename T>
+    class J
+    {
+    public:
+        void J(T s);
+        void test2();
+    };
+    void test4();
+};
+-----------------------------
+template <typename T>
+void C::J<T>::J(T s)
 {
 }
 
