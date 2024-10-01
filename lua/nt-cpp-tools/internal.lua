@@ -297,11 +297,13 @@ function M.imp_func(range_start, range_end, custom_cb)
                   local templ_class_name = fun.class_details[h].name ..
                               (fun.class_details[h].class_template_params or '') .. '::'
                   classes_name = (h == #fun.class_details) and templ_class_name or classes_name .. templ_class_name
-                  if not classes_template_statemets then
-                      classes_template_statemets = fun.class_details[h].class_template_statement
-                  else
-                      classes_template_statemets = classes_template_statemets .. ' '
-                                              .. fun.class_details[h].class_template_statement
+                  if fun.class_details[h].class_template_statement then
+                    if not classes_template_statemets then
+                        classes_template_statemets = fun.class_details[h].class_template_statement
+                    else
+                        classes_template_statemets = classes_template_statemets .. ' '
+                                                .. fun.class_details[h].class_template_statement
+                    end
                   end
               end
             end

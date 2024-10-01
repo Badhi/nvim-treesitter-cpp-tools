@@ -283,7 +283,7 @@ void C<T>::J<K>::test(S s)
 
 
 ============================================
-template_nested_class_tempalte_class_template_fun_with_normal
+template_nested_class_template_class_template_fun_with_normal
 ============================================
 template<typename T>
 class C 
@@ -315,6 +315,30 @@ void C<T>::test4()
 
 ----------------------------
 1, 14
+
+============================================
+nested_class_template_class_with_constructor
+============================================
+template<typename T>
+class C 
+{
+public:
+    class J
+    {
+    public:
+        void J(S s);
+        void test2();
+    };
+    void test4();
+};
+-----------------------------
+template <typename T>
+void C<T>::J::J(S s)
+{
+}
+
+----------------------------
+8,8 
 
 ============================================
 variable_with_functions
