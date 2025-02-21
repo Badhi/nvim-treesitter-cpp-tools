@@ -33,6 +33,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Test Dependencies
         run: |
+          sudo apt install libfuse2 
           mkdir -p ~/.local/share/nvim/site/pack/plenary.nvim/start
           cd ~/.local/share/nvim/site/pack/plenary.nvim/start
           git clone https://github.com/nvim-lua/plenary.nvim
