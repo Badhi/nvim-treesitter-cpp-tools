@@ -1,5 +1,5 @@
 local util = require("nt-cpp-tools.util")
-local configs = require("nvim-treesitter.configs")
+local configs = require("nt-cpp-tools.config")
 local previewer = require("nt-cpp-tools.preview_printer")
 
 local M = {}
@@ -18,7 +18,7 @@ function M.get_preview_and_apply(_)
 end
 
 local function add_to_cpp(output, _)
-    local config = configs.get_module "nt_cpp_tools"
+    local config = configs.get_cfg()
     local file_name = vim.fn.expand('%:r')
     vim.api.nvim_command('vsp ' .. file_name ..
         '.' .. config.source_extension)
