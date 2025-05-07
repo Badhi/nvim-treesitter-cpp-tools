@@ -6,6 +6,7 @@
                 (function_declarator))
             (pointer_declarator
                 (function_declarator))
+            (trailing_return_type)
         ]
     ) 
     (declaration
@@ -15,6 +16,7 @@
                 (function_declarator))
             (pointer_declarator
                 (function_declarator))
+            (trailing_return_type)
         ]
     )
 ]@member_function

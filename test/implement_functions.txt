@@ -74,6 +74,21 @@ void C::test()
 4, 4
 
 ===========================================
+with_trailing_return_type
+===========================================
+class C 
+{
+public:
+    auto test() -> void;
+};
+-------------------------------------
+auto C::test() -> void
+{
+}
+-------------------------------------
+4, 4
+
+===========================================
 with_return_type_and_args
 ===========================================
 class C 
@@ -83,6 +98,21 @@ public:
 };
 -------------------------------------
 void C::test(int i)
+{
+}
+-------------------------------------
+4, 4
+
+===========================================
+with_trailing_return_type_and_args
+===========================================
+class C 
+{
+public:
+    auto test(int i) -> void;
+};
+-------------------------------------
+auto C::test(int i) -> void
 {
 }
 -------------------------------------
@@ -101,7 +131,22 @@ public:
 std::vector<int>& C::test(int i)
 {
 }
+----------------------------
+5,5
 
+=================================
+with_trailing_ref_return_type_and_args
+===============================
+#include <vector>
+class C 
+{
+public:
+    auto test(int i) -> std::vector<int>&;
+};
+-------------------------
+auto C::test(int i) -> std::vector<int>&
+{
+}
 ----------------------------
 5,5
 
@@ -118,7 +163,22 @@ public:
 std::vector<int>& C::test(int i)
 {
 }
+-----------------------------
+5,5
 
+====================================
+default_value_trailing_return_type
+=================================
+#include <vector>
+class C 
+{
+public:
+    auto test(int i = 1) -> std::vector<int>&;
+};
+------------------------------
+auto C::test(int i) -> std::vector<int>&
+{
+}
 -----------------------------
 5,5
 
@@ -133,6 +193,22 @@ class C
 };
 -----------------------------
 const std::vector<int>& C::j() const
+{
+}
+----------------------------
+5,5
+
+============================================
+const_func_const_reference_return_trailing_return_type
+============================================
+#include <vector>
+class C 
+{
+    public:
+    auto j() const -> const std::vector<int>&;
+};
+-----------------------------
+auto C::j() const -> const std::vector<int>&
 {
 }
 ----------------------------
@@ -157,6 +233,48 @@ const std::vector<int>& C::j() const
 {
 }
 ----------------------------
+10,10
+
+============================================
+const_func_const_reference_trailing_return_override
+============================================
+#include <vector>
+class A
+{
+public:
+    virtual auto j() const -> const std::vector<int>&  = 0;
+};
+class C : public A
+{
+public:
+    auto j() const -> const std::vector<int>& override;
+};
+-----------------------------
+auto C::j() const -> const std::vector<int>&
+{
+}
+----------------------------
+10,10
+
+============================================
+const_noexcept_with_trailing_return_const_override
+============================================
+#include <vector>
+class A
+{
+public:
+    virtual auto test2() const noexcept -> const std::vector<int>& = 0;
+};
+class C : public A
+{
+public:
+    auto test2() const noexcept -> const std::vector<int>& override;
+};
+-----------------------------
+auto C::test2() const noexcept -> const std::vector<int>&
+{
+}
+-----------------------------
 10,10
 
 ============================================
@@ -482,6 +600,24 @@ std::vector<int>* C::test2()
 6,6
 
 ============================================
+vector_pointer_return_template_function
+============================================
+#include <vector>
+class C 
+{
+public:
+    template<typename T>
+    auto test2() -> std::vector<int>*;
+};
+-----------------------------
+template <typename T>
+auto C::test2() -> std::vector<int>*
+{
+}
+----------------------------
+6,6
+
+============================================
 noexcept_with_template
 ============================================
 class C 
@@ -493,6 +629,23 @@ public:
 -----------------------------
 template <typename T>
 int* C::test2() noexcept
+{
+}
+-----------------------------
+5,5
+
+============================================
+noexcept_with_template_trailing_return
+============================================
+class C 
+{
+public:
+    template<typename T>
+    auto test2() noexcept -> int*;
+};
+-----------------------------
+template <typename T>
+auto C::test2() noexcept -> int*
 {
 }
 -----------------------------
@@ -516,6 +669,23 @@ int* C::test2() const noexcept
 5,5
 
 ============================================
+const_noexcept_with_template_trailing_return
+============================================
+class C 
+{
+public:
+    template<typename T>
+    auto test2() const noexcept -> int*;
+};
+-----------------------------
+template <typename T>
+auto C::test2() const noexcept -> int*
+{
+}
+-----------------------------
+5,5
+
+============================================
 simple_global_functions
 ============================================
 void test();
@@ -525,6 +695,7 @@ void test()
 }
 -----------------------------
 1,1
+
 ============================================
 global_functions_with_args
 ============================================
@@ -535,6 +706,7 @@ void test(int a, int b, std::vector<int> d)
 }
 -----------------------------
 1,1
+
 ============================================
 global_functions_with_args_with_return
 ============================================
@@ -545,6 +717,18 @@ std::map<int, std::string> test(int a, int b, std::vector<int> d)
 }
 -----------------------------
 1,1
+
+============================================
+global_functions_with_args_with_trailing_return
+============================================
+auto test(int a, int b, std::vector<int> d) -> std::map<int, std::string>;
+-----------------------------
+auto test(int a, int b, std::vector<int> d) -> std::map<int, std::string>
+{
+}
+-----------------------------
+1,1
+
 ============================================
 template_global_functions_with_args
 ============================================
@@ -565,6 +749,18 @@ std::map<int, std::string> test(int a, int b, std::vector<int> d);
 -----------------------------
 template <typename T>
 std::map<int, std::string> test(int a, int b, std::vector<int> d)
+{
+}
+-----------------------------
+1,2
+============================================
+template_global_functions_with_args_with_trailing_return
+============================================
+template<typename T>
+auto test(int a, int b, std::vector<int> d) -> std::map<int, std::string>;
+-----------------------------
+template <typename T>
+auto test(int a, int b, std::vector<int> d) -> std::map<int, std::string>
 {
 }
 -----------------------------
