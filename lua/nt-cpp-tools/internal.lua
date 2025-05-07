@@ -196,6 +196,9 @@ local function get_member_function_data(node)
         if child:type() == 'type_qualifier' or child:type() == 'noexcept' then -- function constness or noexcept
             result.fun_dec = result.fun_dec .. ' ' .. t2s(get_node_text(child))
         end
+        if child:type() == 'trailing_return_type' then
+            result.fun_dec = result.fun_dec .. ' ' .. t2s(get_node_text(child))
+        end
     end
     return result
 end
