@@ -11,12 +11,12 @@ local function setup_commands(commands)
         command_name,
         f_args
         )
-        local parts = vim.tbl_flatten {
+        local parts = vim.iter({
             "command!",
             def.args,
             command_name,
             call_fn,
-        }
+        }):flatten():totable()
         vim.api.nvim_command(table.concat(parts, " "))
     end
 end
