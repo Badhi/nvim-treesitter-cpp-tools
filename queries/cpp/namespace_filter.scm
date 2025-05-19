@@ -1,0 +1,1 @@
+(namespace_definition) @namespace

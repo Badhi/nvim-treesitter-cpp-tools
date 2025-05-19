@@ -234,29 +234,37 @@ local function find_class_details(member_node, member_data)
     -- the function could be a template, therefore going an extra parent higher
     local class_node = member_node:parent():parent()
 
-    while class_node and
-        (class_node:type() == 'class_specifier' or
-        class_node:type() == 'struct_specifier' or
-        class_node:type() == 'union_specifier' ) do
-        local class_data = {}
-        class_data.name = t2s(get_node_text(class_node:field('name')[1]))
+    while class_node do
+        if (class_node:type() == 'class_specifier' or
+            class_node:type() == 'struct_specifier' or
+            class_node:type() == 'union_specifier' or
+            class_node:type() == 'namespace_definition') then
 
-        local template_statement, params = check_get_template_info(class_node)
-        if template_statement then
-            class_data.class_template_statement = 'template ' .. template_statement
-            for i = #params, 1, -1 do
-                local val = params[i]
-                class_data.class_template_params = (i == #params and '<' or
-                                class_data.class_template_params .. ',') .. val
+            local class_data = {}
+            class_data.name = t2s(get_node_text(class_node:field('name')[1]))
+
+            local template_statement, params = check_get_template_info(class_node)
+            if template_statement then
+                class_data.class_template_statement = 'template ' .. template_statement
+                for i = #params, 1, -1 do
+                    local val = params[i]
+                    class_data.class_template_params = (i == #params and '<' or
+                                    class_data.class_template_params .. ',') .. val
+                end
+                class_data.class_template_params = class_data.class_template_params .. '>'
             end
-            class_data.class_template_params = class_data.class_template_params .. '>'
+
+            _, _, end_row, _ = class_node:range()
+            table.insert(member_data.class_details, class_data)
         end
 
-        _, _, end_row, _ = class_node:range()
-        table.insert(member_data.class_details, class_data)
-
-        class_node = get_nth_parent(class_node, 2)
+        class_node = class_node:parent()
     end
+
+    if class_node then
+
+    end
+    print(vim.inspect(member_data))
     return end_row
 end
 

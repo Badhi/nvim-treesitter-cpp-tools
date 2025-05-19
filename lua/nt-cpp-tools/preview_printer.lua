@@ -6,7 +6,9 @@ local mark_id
 local last_buffer
 local ns_id
 local result
+local orig_text
 local on_accept_callbck
+local move_modifier_fun
 
 local function remove_virt_text()
     if mark_id and vim.api.nvim_buf_is_valid(last_buffer) then
@@ -17,11 +19,23 @@ end
 local function draw_virtual_text(txt, row)
     remove_virt_text()
 
-    if txt then
-        result = {}
-        for line in txt:gmatch('[^\n]+') do
-            result[#result+1] = {{line, 'TSCppHighlight'}}
-        end
+    if move_modifier_fun or txt then
+      if txt then
+          orig_text = txt
+          result = {}
+      end
+
+      local new_text = orig_text
+      if move_modifier_fun then
+          new_text = move_modifier_fun(orig_text, row)
+          result = {}
+      end
+
+      if not result then
+          for line in new_text:gmatch('[^\n]+') do
+              result[#result+1] = {{line, 'TSCppHighlight'}}
+          end
+      end
     end
 
     last_buffer = vim.fn.bufnr('%')
@@ -62,11 +76,13 @@ function M.on_cursor_moved()
     draw_virtual_text(nil, vim.api.nvim_win_get_cursor(0)[1])
 end
 
-function M.start_preview(txt, insert_row, on_accept_cb)
+function M.start_preview(txt, insert_row, on_accept_cb, move_modifier)
     on_accept_callbck = on_accept_cb
     local keymap_config = { silent = true, noremap = true }
 
     local config = configs.get_cfg()
+
+    move_modifier_fun = move_modifier
 
     vim.api.nvim_set_keymap('n', config.preview.quit,
         ":lua require'nt-cpp-tools.preview_printer'.flush_and_end_preview()<CR>",
