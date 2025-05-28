@@ -20,22 +20,23 @@ local function draw_virtual_text(txt, row)
     remove_virt_text()
 
     if move_modifier_fun or txt then
-      if txt then
-          orig_text = txt
-          result = {}
-      end
+        if txt then
+            orig_text = txt
+            result = nil
+        end
 
-      local new_text = orig_text
-      if move_modifier_fun then
-          new_text = move_modifier_fun(orig_text, row)
-          result = {}
-      end
+        local new_text = orig_text
+        if move_modifier_fun then
+            new_text = move_modifier_fun(orig_text, row)
+            result = nil
+        end
 
-      if not result then
-          for line in new_text:gmatch('[^\n]+') do
-              result[#result+1] = {{line, 'TSCppHighlight'}}
-          end
-      end
+        if not result then
+            result = {}
+            for line in new_text:gmatch('[^\n]+') do
+                result[#result + 1] = { { line, 'TSCppHighlight' } }
+            end
+        end
     end
 
     last_buffer = vim.fn.bufnr('%')
@@ -45,8 +46,8 @@ local function draw_virtual_text(txt, row)
     local col_num = 0
 
     local opts = {
-      id = 1,
-      virt_lines = result
+        id = 1,
+        virt_lines = result
     }
 
     mark_id = vim.api.nvim_buf_set_extmark(last_buffer, ns_id, line_num, col_num, opts)

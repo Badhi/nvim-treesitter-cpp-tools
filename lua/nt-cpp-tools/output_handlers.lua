@@ -32,6 +32,23 @@ local function get_namespaces(root, row)
     return namespaces
 end
 
+local function modify_txt(scopes, txt_namespaces, txt)
+    print(vim.inspect(txt_namespaces))
+    local remove_nodes = {}
+    for _, txt_n in ipairs(txt_namespaces) do
+        for _, scope in ipairs(scopes) do
+            local t = txt_n[1]
+            if vim.treesitter.get_node_text(t, txt) ~= scope then
+                break
+            end
+
+            table.insert(remove_nodes, t)
+            table.remove(txt_n, 1)
+        end
+    end
+    print(vim.inspect(remove_nodes))
+end
+
 local function move_modifier(txt, row)
     local buf_root = vim.treesitter.get_parser(nil, 'cpp'):parse()[1]:root()
     local namespaces = get_namespaces(buf_root, row)
@@ -50,6 +67,11 @@ local function move_modifier(txt, row)
         table.insert(k, node)
     end
 
+    if #k == 0 then
+        return txt
+    end
+
+    modify_txt(namespaces, k, txt)
 
     return txt
 end

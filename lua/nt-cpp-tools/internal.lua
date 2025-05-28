@@ -264,7 +264,6 @@ local function find_class_details(member_node, member_data)
     if class_node then
 
     end
-    print(vim.inspect(member_data))
     return end_row
 end
 
