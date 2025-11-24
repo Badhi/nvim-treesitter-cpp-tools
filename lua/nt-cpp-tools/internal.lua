@@ -1,6 +1,5 @@
-local ts_utils = require("nvim-treesitter.ts_utils")
-local ts_query = require("nvim-treesitter.query")
-local parsers = require("nvim-treesitter.parsers")
+local ts_query = require("vim.treesitter.query")
+local ts = require("vim.treesitter")
 local previewer = require("nt-cpp-tools.preview_printer")
 local output_handlers = require("nt-cpp-tools.output_handlers")
 local util = require("nt-cpp-tools.util")
@@ -27,7 +26,7 @@ local function run_on_nodes(query, runner, sel_start_row, sel_end_row)
     local bufnr = 0
     local ft = vim.api.nvim_buf_get_option(bufnr, 'ft')
 
-    local parser = parsers.get_parser(bufnr, ft)
+    local parser = ts.get_parser(bufnr, ft)
     local root = parser:parse()[1]:root()
 
     local matches = query:iter_matches(root, bufnr, sel_start_row, sel_end_row + 1)
@@ -264,7 +263,7 @@ function M.imp_func(range_start, range_end, custom_cb)
     range_start = range_start - 1
     range_end = range_end - 1
 
-    local query = ts_query.get_query('cpp', 'outside_class_def')
+    local query = ts_query.get('cpp', 'outside_class_def')
 
     local e_row
     local results = {}

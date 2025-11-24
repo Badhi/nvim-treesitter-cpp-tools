@@ -1,4 +1,4 @@
-local queries = require "nvim-treesitter.query"
+local ts = require "vim.treesitter"
 
 local default_config = {
     enable = false,
@@ -9,7 +9,7 @@ local default_config = {
     header_extension = 'h',
     source_extension = 'cpp',
     is_supported = function(lang)
-        return queries.get_query(lang, 'query') ~= nil
+        return ts.get_query(lang, 'query') ~= nil
     end
 }
 
