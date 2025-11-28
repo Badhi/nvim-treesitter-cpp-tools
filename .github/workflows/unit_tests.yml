@@ -56,7 +56,7 @@ jobs:
           sudo cp ./nvim.appimage /usr/bin/nvim
           sudo chmod uog+rwx /usr/bin/nvim
       - name: Install treesitter parsers
-        run: nvim --headless -c "TSInstallSync cpp" -c "q"
+        run: nvim --headless -c "TSInstall cpp" -c "q"
 
       - name: Run Test
         run: ./scripts/run_tests.sh

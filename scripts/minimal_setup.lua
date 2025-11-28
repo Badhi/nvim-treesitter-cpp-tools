@@ -9,4 +9,3 @@ vim.o.filetype = 'cpp'
 
 require("nvim-treesitter").setup {
 }
-require'nvim-treesitter'.install { 'cpp'}
