@@ -44,7 +44,7 @@ jobs:
       - name: Setup nvim and tree sitter
         env:
           NVIM_TAG: ${{ matrix.nvim_version }}
-          TREE_SITTER_CLI_TAG: v0.20.4
+          TREE_SITTER_CLI_TAG: v0.25.10
         run: |
           wget -O - https://github.com/tree-sitter/tree-sitter/releases/download/${TREE_SITTER_CLI_TAG}/tree-sitter-linux-x64.gz | gunzip -c > tree-sitter
           sudo cp ./tree-sitter /usr/bin/tree-sitter
