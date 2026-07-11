@@ -1,5 +1,3 @@
-local ts = require "vim.treesitter"
-
 local default_config = {
     enable = false,
     preview = {
@@ -9,7 +7,7 @@ local default_config = {
     header_extension = 'h',
     source_extension = 'cpp',
     is_supported = function(lang)
-        return ts.get_query(lang, 'query') ~= nil
+        return vim.treesitter.query.get(lang, 'query') ~= nil
     end
 }
 
