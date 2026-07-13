@@ -1,6 +1,3 @@
-local ts_query = require("vim.treesitter.query")
-local ts = require("vim.treesitter")
-local previewer = require("nt-cpp-tools.preview_printer")
 local output_handlers = require("nt-cpp-tools.output_handlers")
 local util = require("nt-cpp-tools.util")
 
@@ -24,9 +21,9 @@ end
 
 local function run_on_nodes(query, runner, sel_start_row, sel_end_row)
     local bufnr = 0
-    local ft = vim.api.nvim_buf_get_option(bufnr, 'ft')
+    local ft = vim.bo[bufnr].ft
 
-    local parser = ts.get_parser(bufnr, ft)
+    local parser = vim.treesitter.get_parser(bufnr, ft)
     local root = parser:parse()[1]:root()
 
     local matches = query:iter_matches(root, bufnr, sel_start_row, sel_end_row + 1)
@@ -36,13 +33,14 @@ local function run_on_nodes(query, runner, sel_start_row, sel_end_row)
         if pattern == nil then
             break
         end
-        if type(match[1][1]) == 'userdata' then -- fix for 6913c5e1 in nvim  
-          for _, m in pairs(match) do
-            runner(query.captures, m)
-          end
-        else
-          runner(query.captures, match)
+
+        -- New API: match[cid] is a list of nodes.
+        -- Since we don't use quantifiers, each list has exactly one node.
+        local single_node_match = {}
+        for cid, nodes in pairs(match) do
+            single_node_match[cid] = nodes[1]
         end
+        runner(query.captures, single_node_match)
     end
 
     return true
@@ -263,7 +261,7 @@ function M.imp_func(range_start, range_end, custom_cb)
     range_start = range_start - 1
     range_end = range_end - 1
 
-    local query = ts_query.get('cpp', 'outside_class_def')
+    local query = vim.treesitter.query.get('cpp', 'outside_class_def')
 
     local e_row
     local results = {}
@@ -341,7 +339,7 @@ function M.concrete_class_imp(range_start, range_end)
     range_start = range_start - 1
     range_end = range_end - 1
 
-    local query = ts_query.get_query('cpp', 'concrete_implement')
+    local query = vim.treesitter.query.get('cpp', 'concrete_implement')
     local base_class = ''
     local results = {}
     local e_row
@@ -386,7 +384,7 @@ function M.rule_of_5(limit_at_3, range_start, range_end)
     range_start = range_start - 1
     range_end = range_end - 1
 
-    local query = ts_query.get_query('cpp', 'special_function_detectors')
+    local query = vim.treesitter.query.get('cpp', 'special_function_detectors')
 
     local checkers = {
         destructor = false,
